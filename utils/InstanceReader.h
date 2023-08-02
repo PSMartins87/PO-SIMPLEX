@@ -51,7 +51,7 @@ std::vector<double> extractCoefficients(const std::string &expression)
     return coefficients;
 }
 
-LPInstance analyzeOptimizationType(const std::string &filename)
+LPInstance LoadFile(const std::string &filename)
 {
     LPInstance instance;
     std::ifstream file(filename);

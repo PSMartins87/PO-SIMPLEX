@@ -4,7 +4,7 @@
 
 int main()
 {
-    LPInstance instance = analyzeOptimizationType("a.lp");
+    LPInstance instance = LoadFile("a.lp");
     if (instance.type)
     {
         std::cout << "Maximize" << std::endl;
@@ -13,7 +13,7 @@ int main()
     {
         std::cout << "Minimize" << std::endl;
     }
-
+    std::cout << "\n";
     std::cout << "Funcao objetivo: ";
     for (size_t i = 0; i < instance.objective.size(); ++i)
     {
@@ -23,8 +23,8 @@ int main()
             std::cout << " + ";
         }
     }
-    std::cout << std::endl;
-
+    std::cout << "\n";
+    std::cout << "\n";
     std::cout << "Restricoes: " << std::endl;
     for (const auto &constraint : instance.constraints)
     {
@@ -38,7 +38,7 @@ int main()
         }
         std::cout << " " << constraint.signal << " " << constraint.bound << std::endl;
     }
-
+    std::cout << "\n";
     std::cout << "Bounds:\n";
     for (size_t i = 0; i < instance.bounds.size(); ++i)
     {
