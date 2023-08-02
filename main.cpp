@@ -1,41 +1,48 @@
+#include <iostream>
 #include "utils/inversa.h"
+#include "utils/InstanceReader.h"
+
 int main()
 {
-    int tamanhoMatriz = 0;
-    std::cout << "Tamanho da matriz" << std::endl;
-    std::cin >> tamanhoMatriz;
-
-    double **matrizIdentidade = {0};
-    matrizIdentidade = new double *[tamanhoMatriz];
-    for (int i = 0; i < tamanhoMatriz; i++)
+    LPInstance instance = analyzeOptimizationType("a.lp");
+    if (instance.type)
     {
-        matrizIdentidade[i] = new double[tamanhoMatriz];
-    }
-
-    double **matriz = {0};
-    matriz = new double *[tamanhoMatriz];
-    for (int i = 0; i < tamanhoMatriz; i++)
-    {
-        matriz[i] = new double[tamanhoMatriz];
-    }
-
-    double **inversa = {0};
-    inversa = new double *[tamanhoMatriz];
-    for (int i = 0; i < tamanhoMatriz; i++)
-    {
-        inversa[i] = new double[tamanhoMatriz];
-    }
-    
-    preencheIdentidade(matrizIdentidade, tamanhoMatriz);
-    system("clear");
-
-    if (calculaDeterminante(matriz, tamanhoMatriz) != 0)
-    {
-        calcularInversa(matriz, matrizIdentidade, inversa, tamanhoMatriz);
-        mostrarMatriz(inversa, tamanhoMatriz);
+        std::cout << "Maximize" << std::endl;
     }
     else
     {
-        std::cout << "matriz não invertivel" << std::endl;
+        std::cout << "Minimize" << std::endl;
     }
+
+    std::cout << "Funcao objetivo: ";
+    for (size_t i = 0; i < instance.objective.size(); ++i)
+    {
+        std::cout << instance.objective[i] << "x" << (i + 1);
+        if (i != instance.objective.size() - 1)
+        {
+            std::cout << " + ";
+        }
+    }
+    std::cout << std::endl;
+
+    std::cout << "Restricoes: " << std::endl;
+    for (const auto &constraint : instance.constraints)
+    {
+        for (size_t i = 0; i < constraint.coefficients.size(); ++i)
+        {
+            std::cout << constraint.coefficients[i] << "x" << (i + 1);
+            if (i != constraint.coefficients.size() - 1)
+            {
+                std::cout << " ";
+            }
+        }
+        std::cout << " " << constraint.signal << " " << constraint.bound << std::endl;
+    }
+
+    std::cout << "Bounds:\n";
+    for (size_t i = 0; i < instance.bounds.size(); ++i)
+    {
+        std::cout << instance.bounds[i].lower_bound << " <= x" << (i + 1) << " <= " << instance.bounds[i].upper_bound << std::endl;
+    }
+    return 0;
 }
