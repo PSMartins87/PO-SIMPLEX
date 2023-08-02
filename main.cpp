@@ -1,10 +1,11 @@
 #include <iostream>
 #include "utils/inversa.h"
 #include "utils/InstanceReader.h"
+//tratar bounds e constraints
 
 int main()
 {
-    LPInstance instance = LoadFile("a.lp");
+    LPInstance instance = loadFile("a.lp");
     if (instance.type)
     {
         std::cout << "Maximize" << std::endl;

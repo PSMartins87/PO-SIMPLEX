@@ -28,7 +28,7 @@ struct LPInstance
 std::vector<double> extractCoefficients(const std::string &expression)
 {
     std::vector<double> coefficients;
-    std::regex pattern(R"(([+-]?\s*\d+(\.\d+)?)\s*[xX](\d+))");
+    std::regex pattern(R"(([+-]?\s*\d+(\.\d+)?)\s*[xX](\d+)|[+-]?\s*\d+(\.\d+)?(?!\s*[xX]))");
     std::sregex_iterator it(expression.begin(), expression.end(), pattern);
     std::sregex_iterator end;
 
@@ -36,14 +36,25 @@ std::vector<double> extractCoefficients(const std::string &expression)
     {
         std::string coef_str = (*it)[1].str();
         coef_str = std::regex_replace(coef_str, std::regex(R"(\s)"), ""); // Remove espaços em branco
-        double coefficient = std::stod(coef_str);
-
-        int index = std::stoi((*it)[3].str());
-        if (index > coefficients.size())
+        double coefficient = 1.0;
+        if (!coef_str.empty())
         {
-            coefficients.resize(index, 0);
+            coefficient = std::stod(coef_str);
         }
-        coefficients[index - 1] = coefficient;
+
+        if ((*it)[3].matched)
+        {
+            int index = std::stoi((*it)[3].str());
+            if (index > coefficients.size())
+            {
+                coefficients.resize(index, 0);
+            }
+            coefficients[index - 1] = coefficient;
+        }
+        else
+        {
+            coefficients.push_back(coefficient);
+        }
 
         ++it;
     }
@@ -51,7 +62,7 @@ std::vector<double> extractCoefficients(const std::string &expression)
     return coefficients;
 }
 
-LPInstance LoadFile(const std::string &filename)
+LPInstance loadFile(const std::string &filename)
 {
     LPInstance instance;
     std::ifstream file(filename);
@@ -79,7 +90,7 @@ LPInstance LoadFile(const std::string &filename)
             objective = line;
             instance.objective = extractCoefficients(objective);
         }
-        if (line.find("Subject To") != std::string::npos)
+        else if (line.find("Subject To") != std::string::npos)
         {
             inBounds = false;
             while (std::getline(file, line) && line.find("Bounds") == std::string::npos)
@@ -96,11 +107,11 @@ LPInstance LoadFile(const std::string &filename)
                 }
             }
         }
-        if (line.find("Bounds") != std::string::npos)
+        else if (line.find("Bounds") != std::string::npos)
         {
             inBounds = true;
         }
-        if (inBounds && (line.find("End") == std::string::npos))
+        else if (inBounds && line.find("End") == std::string::npos)
         {
             VariableBound v;
             std::regex boundPattern(R"(\s*(\d+)\s*<=\s*x(\d+)\s*<=\s*(\d+))");
