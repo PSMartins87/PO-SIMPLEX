@@ -3,7 +3,7 @@
 
 int main()
 {
-    LPInstance instance = convert_obj_func_to_min(LoadFile("a.lp"));
+    LPInstance instance = convert_obj_func_to_min(loadFile("a.lp"));
 
     for (const auto var: instance.objective)
         std::cout << var << std::endl;
