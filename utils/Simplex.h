@@ -1,5 +1,5 @@
 #include "./InstanceReader.h"
-#include "./inversa.h"
+#include "./matriz.h"
 
 LPInstance convert_obj_func_to_min(LPInstance instance)
 {
