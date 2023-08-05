@@ -8,7 +8,7 @@ Subject To
     17 x1 - 29 x2 - 34 x3 - 54 x4 <= 579
 Bounds
     0 <= x1 <= 5
-    0 <= x2 <= 8
-    5 <= x3 <= 59
+    x2 >= 8
+    -inf < x3 < inf
     x4 <= 89
 End

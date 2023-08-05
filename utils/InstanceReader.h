@@ -28,7 +28,7 @@ struct LPInstance
 std::vector<double> extractCoefficients(const std::string &expression)
 {
     std::vector<double> coefficients;
-    std::regex pattern(R"(([+-]?\s*\d+(\.\d+)?)\s*[xX](\d+)|[+-]?\s*\d+(\.\d+)?(?!\s*[xX]))");
+    std::regex pattern(R"(([+-]?\s*\d+(\.\d+)?)\s*[xX](\d+))");
     std::sregex_iterator it(expression.begin(), expression.end(), pattern);
     std::sregex_iterator end;
 
