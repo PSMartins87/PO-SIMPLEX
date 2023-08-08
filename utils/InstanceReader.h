@@ -1,12 +1,17 @@
+#ifndef INSTANCEREADER_H
+#define INSTANCEREADER_H
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
 #include <regex>
+#include <limits>
 
 struct VariableBound
 {
+    std::string lower_bound_sign; // "<", ">", "<=" or ">="
     double lower_bound;
+    std::string upper_bound_sign; // "<", ">", "<=" or ">="
     double upper_bound;
 };
 
@@ -25,10 +30,26 @@ struct LPInstance
     std::vector<VariableBound> bounds;
 };
 
+double parseDouble(const std::string &str)
+{
+    if (str == "inf")
+    {
+        return -std::numeric_limits<double>::infinity();
+    }
+    else if (str == "-inf")
+    {
+        return std::numeric_limits<double>::infinity();
+    }
+    else
+    {
+        return std::stod(str);
+    }
+}
+
 std::vector<double> extractCoefficients(const std::string &expression)
 {
     std::vector<double> coefficients;
-    std::regex pattern(R"(([+-]?\s*\d+(\.\d+)?)\s*[xX](\d+))");
+    std::regex pattern(R"(([+-]?\s*(\d+(\.\d+)?)?)\s*[xX](\d+))");
     std::sregex_iterator it(expression.begin(), expression.end(), pattern);
     std::sregex_iterator end;
 
@@ -36,25 +57,14 @@ std::vector<double> extractCoefficients(const std::string &expression)
     {
         std::string coef_str = (*it)[1].str();
         coef_str = std::regex_replace(coef_str, std::regex(R"(\s)"), ""); // Remove espaços em branco
-        double coefficient = 1.0;
-        if (!coef_str.empty())
-        {
-            coefficient = std::stod(coef_str);
-        }
+        double coefficient = coef_str.empty() ? 1.0 : std::stod(coef_str);
 
-        if ((*it)[3].matched)
+        int index = std::stoi((*it)[4].str());
+        if (index > coefficients.size())
         {
-            int index = std::stoi((*it)[3].str());
-            if (index > coefficients.size())
-            {
-                coefficients.resize(index, 0);
-            }
-            coefficients[index - 1] = coefficient;
+            coefficients.resize(index, 0);
         }
-        else
-        {
-            coefficients.push_back(coefficient);
-        }
+        coefficients[index - 1] = coefficient;
 
         ++it;
     }
@@ -69,6 +79,7 @@ LPInstance loadFile(const std::string &filename)
     if (!file.is_open())
     {
         std::cout << "Erro ao abrir o arquivo: " << filename << std::endl;
+        return instance;
     }
 
     std::string line;
@@ -81,7 +92,7 @@ LPInstance loadFile(const std::string &filename)
         {
             instance.type = true; // 1 representa maximizar
         }
-        else if (line.find("Minimize") != std::string::npos)
+        if (line.find("Minimize") != std::string::npos)
         {
             instance.type = false; // 0 representa minimizar
         }
@@ -90,7 +101,7 @@ LPInstance loadFile(const std::string &filename)
             objective = line;
             instance.objective = extractCoefficients(objective);
         }
-        else if (line.find("Subject To") != std::string::npos)
+        if (line.find("Subject To") != std::string::npos)
         {
             inBounds = false;
             while (std::getline(file, line) && line.find("Bounds") == std::string::npos)
@@ -107,28 +118,30 @@ LPInstance loadFile(const std::string &filename)
                 }
             }
         }
-        else if (line.find("Bounds") != std::string::npos)
+        if (line.find("Bounds") != std::string::npos)
         {
             inBounds = true;
         }
         else if (inBounds && line.find("End") == std::string::npos)
         {
-            VariableBound v;
-            std::regex boundPattern(R"(\s*(\d+)\s*<=\s*x(\d+)\s*<=\s*(\d+))");
-            std::smatch boundMatch;
-            if (std::regex_search(line, boundMatch, boundPattern))
+            std::smatch match;
+
+            // Padrão para verificar bounds do tipo "0 <= x1 <= 5" ou "x2 >= 8"
+            std::regex pattern(R"(\s*(-?inf|\d*)\s*([<>=]*)\s*x(\d*)\s*([<>=]*)\s*(-?inf|\d*)\s*)");
+
+            if (std::regex_match(line, match, pattern))
             {
-                int index = std::stoi(boundMatch[2].str());
-                if (index > instance.bounds.size())
-                {
-                    instance.bounds.resize(index, VariableBound{0, 0});
-                }
-                instance.bounds[index - 1].lower_bound = std::stod(boundMatch[1].str());
-                instance.bounds[index - 1].upper_bound = std::stod(boundMatch[3].str());
+                VariableBound bound;
+
+                bound.lower_bound_sign = match[2].str().empty() ? "<" : match[2].str();
+                bound.lower_bound = (match[1].str().empty() || match[1].str() == "-inf") ? -std::numeric_limits<double>::infinity() : parseDouble(match[1].str());
+                bound.upper_bound_sign = match[4].str().empty() ? "<" : match[4].str();
+                bound.upper_bound = (match[5].str().empty() || match[5].str() == "inf") ? std::numeric_limits<double>::infinity() : parseDouble(match[5].str());
+
+                instance.bounds.push_back(bound);
             }
         }
     }
-
-    file.close();
     return instance;
 }
+#endif // INSTANCEREADER_H
