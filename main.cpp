@@ -3,8 +3,9 @@
 int main()
 {
     LPInstance instance = convert_obj_func_to_min(loadFile("a.lp"));
-    instance = convert_to_standard_form(instance);
+    simplex(instance);
 
+    return 0;
     if (instance.type)
     {
         std::cout << "Maximize" << std::endl;

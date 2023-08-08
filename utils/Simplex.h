@@ -36,21 +36,46 @@ LPInstance convert_to_standard_form(LPInstance instance)
     return instance;
 }
 
-// void create_artificial_problem(LPInstance instance)
-// {
-//     LPInstance aritificial_problem;
+std::vector<double>
+create_cost_vector(LPInstance instance)
+{
+    std::vector<double> c (instance.objective);
 
-//     for (int i = 0; i < instance.objective.size(); i++)
-//     {
-//         aritificial_problem.objective[i] = 0
-//     }
-// }
+    return c;
+}
+
+std::vector<double>
+create_bound_vector(LPInstance instance)
+{
+    int m = instance.constraints.size();
+    std::vector<double> b;
+
+    for (int i = 0; i < m; i++)
+        b.push_back(instance.constraints[i].bound);
+
+    return b;
+}
+
+std::vector<std::vector<double>>
+create_constraint_matrix(LPInstance instance)
+{
+    int n = instance.objective.size();
+    std::vector<std::vector<double>> constraint_matrix;
+
+    for (int i = 0; i < n; i++)
+        constraint_matrix.push_back(instance.constraints[i].coefficients);
+        
+    return constraint_matrix;
+}
 
 void simplex(LPInstance instance)
 {
     instance = convert_obj_func_to_min(instance);
-    instance = convert_to_standard_form(instance);
 
-    // if (verify_instance(converted_instance))
-    //     /*LPInstance artificial_problem = */create_artificial_problem(instance);
+    if (!verify_instance(instance)) {
+        instance = convert_to_standard_form(instance);
+        auto A = create_constraint_matrix(instance);
+        auto c = create_cost_vector(instance);
+        auto b = create_bound_vector(instance);
+    }
 }
