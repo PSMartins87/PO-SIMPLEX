@@ -49,7 +49,7 @@ double parseDouble(const std::string &str)
 std::vector<double> extractCoefficients(const std::string &expression)
 {
     std::vector<double> coefficients;
-    std::regex pattern(R"(([+-]?\s*(\d+(\.\d+)?)?)\s*[xX](\d+))");
+    std::regex pattern(R"(([+-]?\s*\d*(\.\d+)?)\s*[xX](\d+))");
     std::sregex_iterator it(expression.begin(), expression.end(), pattern);
     std::sregex_iterator end;
 
@@ -57,9 +57,13 @@ std::vector<double> extractCoefficients(const std::string &expression)
     {
         std::string coef_str = (*it)[1].str();
         coef_str = std::regex_replace(coef_str, std::regex(R"(\s)"), ""); // Remove espaços em branco
-        double coefficient = coef_str.empty() ? 1.0 : std::stod(coef_str);
+        double coefficient = 1.0;
+        if (!coef_str.empty())
+        {
+            coefficient = coef_str == "-" ? -1.0 : std::stod(coef_str);
+        }
 
-        int index = std::stoi((*it)[4].str());
+        int index = std::stoi((*it)[3].str());
         if (index > coefficients.size())
         {
             coefficients.resize(index, 0);
@@ -115,6 +119,19 @@ LPInstance loadFile(const std::string &filename)
                     c.coefficients = extractCoefficients(line);
                     c.bound = std::stod(signMatch[2].str());
                     instance.constraints.push_back(c);
+                }
+                else
+                {
+                    // Handle the case when index of negative variable is omitted
+                    std::regex noIndexPattern("([+-]?)\\s?(-?\\d+)");
+                    std::smatch noIndexMatch;
+                    if (std::regex_search(line, noIndexMatch, noIndexPattern))
+                    {
+                        c.signal = "";
+                        c.coefficients = extractCoefficients(line);
+                        c.bound = std::stod(noIndexMatch[2].str());
+                        instance.constraints.push_back(c);
+                    }
                 }
             }
         }
