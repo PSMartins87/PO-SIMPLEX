@@ -4,11 +4,19 @@
 
 int main()
 {
-    std::string filename = "a.lp"; // Substitua "arquivo.lp" pelo caminho do arquivo .lp que deseja ler
-    LPInstance instance = convert_obj_func_to_min(loadFile(filename));
+    LPInstance instance = convert_obj_func_to_min(loadFile("a.lp"));
+    simplex(instance);
 
-    std::cout << "Tipo: " << (instance.type ? "Maximize" : "Minimize") << std::endl;
-
+    return 0;
+    if (instance.type)
+    {
+        std::cout << "Maximize" << std::endl;
+    }
+    else
+    {
+        std::cout << "Minimize" << std::endl;
+    }
+    std::cout << "\n";
     std::cout << "Funcao objetivo: ";
     for (size_t i = 0; i < instance.objective.size(); ++i)
     {
