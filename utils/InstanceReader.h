@@ -9,9 +9,9 @@
 
 struct VariableBound
 {
-    std::string lower_bound_sign; // "<", ">", "<=" or ">="
+    std::string lower_bound_sign; 
     double lower_bound;
-    std::string upper_bound_sign; // "<", ">", "<=" or ">="
+    std::string upper_bound_sign; 
     double upper_bound;
 };
 
@@ -56,7 +56,7 @@ std::vector<double> extractCoefficients(const std::string &expression)
     while (it != end)
     {
         std::string coef_str = (*it)[1].str();
-        coef_str = std::regex_replace(coef_str, std::regex(R"(\s)"), ""); // Remove espaços em branco
+        coef_str = std::regex_replace(coef_str, std::regex(R"(\s)"), "");
         double coefficient = 1.0;
         if (!coef_str.empty())
         {
@@ -94,11 +94,11 @@ LPInstance loadFile(const std::string &filename)
     {
         if (line.find("Maximize") != std::string::npos)
         {
-            instance.type = true; // 1 representa maximizar
+            instance.type = true; 
         }
         if (line.find("Minimize") != std::string::npos)
         {
-            instance.type = false; // 0 representa minimizar
+            instance.type = false; 
         }
         if (line.find("obj:") != std::string::npos)
         {
@@ -122,7 +122,6 @@ LPInstance loadFile(const std::string &filename)
                 }
                 else
                 {
-                    // Handle the case when index of negative variable is omitted
                     std::regex noIndexPattern("([+-]?)\\s?(-?\\d+)");
                     std::smatch noIndexMatch;
                     if (std::regex_search(line, noIndexMatch, noIndexPattern))
@@ -142,8 +141,6 @@ LPInstance loadFile(const std::string &filename)
         else if (inBounds && line.find("End") == std::string::npos)
         {
             std::smatch match;
-
-            // Padrão para verificar bounds do tipo "0 <= x1 <= 5" ou "x2 >= 8"
             std::regex pattern(R"(\s*(-?inf|\d*)\s*([<>=]*)\s*x(\d*)\s*([<>=]*)\s*(-?inf|\d*)\s*)");
 
             if (std::regex_match(line, match, pattern))
