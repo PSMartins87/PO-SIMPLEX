@@ -5,8 +5,8 @@
 int main()
 {
     LPInstance instance = convert_obj_func_to_min(loadFile("a.lp"));
-    simplex(instance);
 
+    simplex(instance);
     return 0;
     if (instance.type)
     {

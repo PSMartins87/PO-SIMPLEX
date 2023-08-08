@@ -68,6 +68,44 @@ create_constraint_matrix(LPInstance instance)
     return constraint_matrix;
 }
 
+void create_artificial_problem(std::vector<std::vector<double>> *A, std::vector<double> *c)
+{
+    int m = (*A).size();
+    int n = (*c).size();
+
+    // Zera os coeficientes da função objetivo e adiciona as variáveis artificiais
+    for (int i = 0; i < (n + m); i++) {
+        if (i >= n)
+            (*c).push_back(1);
+        else
+            (*c)[i] = 0;
+    }
+
+    // Adiciona as variáveis artificiais nas restrições
+    for (int i = 0; i < m; i++) {
+        for (int j = n; j < (n + m); j++) {
+            if ((i + m) == j)
+                (*A)[i].push_back(1);
+            else
+                (*A)[i].push_back(0);            
+        }
+    }
+}
+
+// TODO: RETIRAR ESSA FUNÇÃO DAQUI!!!
+void print_vector(std::vector<double> v) {
+    for (auto e: v)
+        std::cout << e << std::endl;
+}
+
+void solve_artificial_problem(std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b)
+{
+    create_artificial_problem(&A, &c);
+    print_vector(c);
+    mostrarMatriz(A);
+    // TODO: Implementar a resolução do problema artificial
+}
+
 void simplex(LPInstance instance)
 {
     instance = convert_obj_func_to_min(instance);
@@ -77,5 +115,6 @@ void simplex(LPInstance instance)
         auto A = create_constraint_matrix(instance);
         auto c = create_cost_vector(instance);
         auto b = create_bound_vector(instance);
+        solve_artificial_problem(A, c, b);
     }
 }
