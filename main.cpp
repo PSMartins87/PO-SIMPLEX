@@ -3,9 +3,7 @@
 int main()
 {
     LPInstance instance = convert_obj_func_to_min(loadFile("a.lp"));
-
-    for (const auto var : instance.objective)
-        std::cout << var << std::endl;
+    instance = convert_to_standard_form(instance);
 
     if (instance.type)
     {
