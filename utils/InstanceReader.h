@@ -35,13 +35,14 @@ struct LPInstance
     std::vector<VariableBound> bounds;
 };
 
-std::vector<double> extractCoefficients(const std::string &expression)
+std::vector<double> extractCoefficients(const std::string &expression, int numVariables = 0)
 {
     std::string expressionWithoutSpaces = std::regex_replace(expression, std::regex("\\s+"), "");
     std::vector<double> coefficients;
     std::regex pattern(R"(([+-]?\d*(\.\d+)?)[xX](\d+))");
     std::sregex_iterator it(expressionWithoutSpaces.begin(), expressionWithoutSpaces.end(), pattern);
     std::sregex_iterator end;
+    coefficients = std::vector<double>(numVariables, 0.0);
     while (it != end)
     {
         double coefficient = 0.0;
@@ -75,6 +76,7 @@ LPInstance loadFile()
     LPInstance instance;
     std::string line;
     bool inBounds = false;
+    int numVariables = 0;
     while (std::getline(std::cin, line))
     {
         line = std::regex_replace(line, std::regex("\\s+"), ""); // Remove espaços em branco
@@ -91,6 +93,7 @@ LPInstance loadFile()
             if (line.find("obj:") != std::string::npos)
             {
                 instance.objective = extractCoefficients(line);
+                numVariables = instance.objective.size();
             }
             if (line.find("SubjectTo") != std::string::npos)
             {
@@ -102,7 +105,7 @@ LPInstance loadFile()
                     if (std::regex_search(line, signMatch, signPattern))
                     {
                         c.signal = signMatch[1].str();
-                        c.coefficients = extractCoefficients(line);
+                        c.coefficients = extractCoefficients(line, numVariables);
                         c.bound = std::stod(signMatch[2].str());
                         instance.constraints.push_back(c);
                     }
