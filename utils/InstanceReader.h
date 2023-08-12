@@ -128,7 +128,7 @@ LPInstance loadFile()
                     bound.lower_bound_sign = (match[2].str() == "") ? "<" : match[2].str();
                     bound.lower_bound = (match[1].str() == "-inf") ? -std::numeric_limits<double>::infinity() : ((match[1].str() == "") ? -std::numeric_limits<double>::infinity() : std::stod(match[1].str()));
                     bound.upper_bound_sign = (match[4].str() == "") ? "<" : match[4].str();
-                    bound.upper_bound = (match[5].str() == "inf") ? -std::numeric_limits<double>::infinity() : ((match[5].str() == "") ? std::numeric_limits<double>::infinity() : std::stod(match[5].str()));
+                    bound.upper_bound = (match[5].str() == "inf") ? std::numeric_limits<double>::infinity() : ((match[5].str() == "") ? std::numeric_limits<double>::infinity() : std::stod(match[5].str()));
 
                     instance.bounds.push_back(bound);
                 }
