@@ -2,13 +2,14 @@
 #include "./matriz.h"
 
 LPInstance convert_obj_func_to_min(LPInstance instance)
-{
+{   
     if (instance.type)
     {
+        std::cout << "Tipo Maximizar - converte para minimizar" << std::endl;
         LPInstance new_instance = instance;
         instance.type = false;
         for (int i = 0; i < instance.objective.size(); i++)
-            new_instance.objective[i] = new_instance.objective[i] * (-1);
+            new_instance.objective[i] = new_instance.objective[i] * (-1);   // Inversão da função objetivo
         return new_instance;
     }
     return instance;
@@ -19,6 +20,7 @@ bool verify_instance(LPInstance instance)
 {
     for (auto constraint: instance.constraints)
         if (constraint.signal == ">" or constraint.signal == ">=" or constraint.signal == "=")
+            std::cout << "Necessita problema artificial" << std::endl;
             return false;
     return true;
 }
@@ -106,7 +108,7 @@ void solve_artificial_problem(std::vector<std::vector<double>> A, std::vector<do
     // TODO: Implementar a resolução do problema artificial
 }
 
-void simplex(LPInstance instance)
+void simplex(LPInstance instance)   //Seria fase 1 apenas?
 {
     instance = convert_obj_func_to_min(instance);
 

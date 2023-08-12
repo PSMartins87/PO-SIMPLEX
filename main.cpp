@@ -2,19 +2,33 @@
 #include "utils/InstanceReader.h"
 #include "utils/Simplex.h"
 
-int main()
+int executar_otimizacao_d(std::string filename, bool show_steps);
+int executar_otimizacao_p(std::string filename);
+
+int main(){
+    bool show_steps = false;         // Altere para "false" para obter o resultado direto
+    std::string filename = "C:/src/VSCode_Workspace/C/TrabSimplex/a.lp"; 
+    executar_otimizacao_d(filename, show_steps);
+    //executar_otimizacao_p(filename);
+}
+
+int executar_otimizacao_d(std::string filename, bool show_steps)
 {
-    std::string filename = "a.lp"; 
     LPInstance instance = convert_obj_func_to_min(loadFile(filename));
-    simplex(instance);
-    return 0;
+
+    if ( show_steps == false){
+        std::cout << "Modo step-by-step Desativado" << std::endl;
+        simplex(instance);
+        return 0;
+    }
+    
     if (instance.type)
     {
-        std::cout << "Maximize" << std::endl;
+        std::cout << "Tipo de função: Maximizar" << std::endl;
     }
     else
     {
-        std::cout << "Minimize" << std::endl;
+        std::cout << "Tipo de função: Minimizar" << std::endl;
     }
     std::cout << "\n";
     std::cout << "Funcao objetivo: ";
@@ -48,11 +62,12 @@ int main()
         std::cout << instance.bounds[i].lower_bound << " " << instance.bounds[i].lower_bound_sign << " "
                   << " x" << (i + 1) << " " << instance.bounds[i].upper_bound_sign << " " << instance.bounds[i].upper_bound << std::endl;
     }
+    simplex(instance);
+    return 0;
 }
-/*
-int main()
+
+int executar_otimizacao_p(std::string filename)
 {
-    std::string filename = "a.lp"; // Substitua "arquivo.lp" pelo caminho do arquivo .lp que deseja ler
     LPInstance instance = loadFile(filename);
 
     std::cout << "Tipo: " << (instance.type ? "Maximize" : "Minimize") << std::endl;
@@ -89,4 +104,3 @@ int main()
                   << " x" << (i + 1) << " " << instance.bounds[i].upper_bound_sign << " " << instance.bounds[i].upper_bound << std::endl;
     }
 }
-*/
