@@ -6,7 +6,7 @@ int executar_otimizacao_d(std::string filename, bool show_steps);
 int executar_otimizacao_p(std::string filename);
 
 int main(){
-    bool show_steps = false;         // Altere para "false" para obter o resultado direto
+    bool show_steps = true;         // Altere para "false" para obter o resultado direto
     std::string filename = "C:/src/VSCode_Workspace/C/TrabSimplex/a.lp"; 
     executar_otimizacao_d(filename, show_steps);
     //executar_otimizacao_p(filename);
@@ -14,7 +14,7 @@ int main(){
 
 int executar_otimizacao_d(std::string filename, bool show_steps)
 {
-    LPInstance instance = convert_obj_func_to_min(loadFile(filename));
+    LPInstance instance = convert_obj_func_to_min(loadFile());
 
     if ( show_steps == false){
         std::cout << "Modo step-by-step Desativado" << std::endl;
@@ -68,7 +68,7 @@ int executar_otimizacao_d(std::string filename, bool show_steps)
 
 int executar_otimizacao_p(std::string filename)
 {
-    LPInstance instance = loadFile(filename);
+    LPInstance instance = loadFile();
 
     std::cout << "Tipo: " << (instance.type ? "Maximize" : "Minimize") << std::endl;
 
