@@ -1,133 +1,233 @@
-#include "./InstanceReader.h"
-#include "./matriz.h"
+#ifndef SIMPLEX_H
+#define SIMPLEX_H
 
-LPInstance convert_obj_func_to_min(LPInstance instance)
-{   
-    if (instance.type)
-    {
-        std::cout << "Tipo Maximizar - converte para minimizar" << std::endl;
-        LPInstance new_instance = instance;
-        instance.type = false;
-        for (int i = 0; i < instance.objective.size(); i++)
-            new_instance.objective[i] = new_instance.objective[i] * (-1);   // Inversão da função objetivo
-        return new_instance;
-    }
-    return instance;
-}
+#include <string>
+#include <vector>
+#include <regex>
 
-// Checa a necessidade de formular o problema artificial, false se precisar e true caso contrário
-bool verify_instance(LPInstance instance)
-{
-    for (auto constraint: instance.constraints)
-        if ( constraint.signal != "<" || constraint.signal != "<="){
-        // Função substituída por igualdade lógica
-        //if (constraint.signal == ">" or constraint.signal == ">=" or constraint.signal == "=")  
-            std::cout << "Necessita problema artificial" << std::endl;
+#include "tabela.h"
+//#include "opera_matrizes.h"
+//#include "obtem_inversa.h"
+#include "exibicao.h"
+
+// Assinaturas de funções
+void formalizar_tabela(Tabela& tabela);
+void artificializar(Tabela& tabela);
+
+bool checa_solucao_otima(std::vector<double> C_chapeu){
+    for (int elemento : C_chapeu) {
+        if (elemento < 0) {
             return false;
         }
+    }
     return true;
 }
 
-LPInstance convert_to_standard_form(LPInstance instance)
-{    
-    for (int i = 0; i < instance.constraints.size(); i++) {
-        if (instance.constraints[i].signal == ">=" || instance.constraints[i].signal == ">")
-            instance.constraints[i].coefficients.push_back(-1);
-        else if (instance.constraints[i].signal == "<=" || instance.constraints[i].signal == "<")
-            instance.constraints[i].coefficients.push_back(1);
-        instance.constraints[i].signal = "=";
+void formalizar_tabela(Tabela& tabela){
+
+    std::regex padraoVariaveisNBasicas("x+\\d*");
+    int numVariaveisNBasicas = 0;
+    for (size_t i = 0; i < tabela.X.size(); i++){
+        if(std::regex_match(tabela.X[i], padraoVariaveisNBasicas)){
+            numVariaveisNBasicas++;
+        }
     }
+    tabela.num_var = numVariaveisNBasicas;
 
-    return instance;
+    int linha = 0;
+    int indice_limite = 0;
+
+    for(std::string &limite : tabela.limites){
+        tabela.linha_artificial.push_back(true);
+        if ( (limite == "<" || limite == ">") || (limite == "<=" || limite == ">=")){
+
+            tabela.num_var++;
+            std::string xB = "b" + std::to_string(tabela.num_var);
+            tabela.X.push_back(xB);
+            tabela.C.push_back(0.0);
+
+            tabela.linha_artificial[linha] = false;
+            if( !tabela.matrizA.empty()){
+                for (size_t i = 0; i < tabela.coluna_b.size(); i++){
+                    if( i == linha ){
+                        tabela.matrizA[i].push_back(1.0);
+                    }else{
+                        tabela.matrizA[i].push_back(0.0);
+                    }
+                }
+            }else{
+                for (size_t i = 0; i < tabela.coluna_b.size(); i++){
+
+                    std::vector<double> nova_linha;
+
+                    if( i == linha ){
+                        nova_linha.push_back(1.0);
+                        tabela.matrizA.push_back(nova_linha);
+                    }else{
+                        nova_linha.push_back(0.0);
+                        tabela.matrizA.push_back(nova_linha);
+                    }
+                    nova_linha.clear();
+                }
+            }
+
+            tabela.limites[indice_limite] = "=";
+        }else{
+            tabela.problema_artificial = true;
+        }
+        indice_limite++;
+        linha++;
+    }
 }
 
-std::vector<double>
-create_cost_vector(LPInstance instance)
-{
-    std::vector<double> c (instance.objective);
+void artificializar(Tabela& tabela){
+    
+    // Artificializa o problema
+    for (size_t i = 0; i < tabela.C.size(); i++){
+        tabela.C[i] = 0.0;
+    }
+    int linha = 0;
+    for(std::string &limite : tabela.limites){
 
-    return c;
+        if (limite == "=" && tabela.linha_artificial[linha]){
+
+            tabela.num_var++;
+            std::string xA = "a" + std::to_string(tabela.num_var);
+            tabela.X.push_back(xA);
+            tabela.C.push_back(1.0);
+
+            if( !tabela.matrizA.empty()){
+                for (size_t i = 0; i < tabela.coluna_b.size(); i++){
+                    if( i == linha ){
+                        tabela.matrizA[i].push_back(1.0);
+                    }else{
+                        tabela.matrizA[i].push_back(0.0);
+                    }
+                }
+            }else{
+                for (size_t i = 0; i < tabela.coluna_b.size(); i++){
+
+                    std::vector<double> nova_linha;
+
+                    if( i == linha ){
+                        nova_linha.push_back(1.0);
+                        tabela.matrizA.push_back(nova_linha);
+                    }else{
+                        nova_linha.push_back(0.0);
+                        tabela.matrizA.push_back(nova_linha);
+                    }
+                    nova_linha.clear();
+                }
+            }
+        }
+        linha++;
+    }
 }
 
-std::vector<double>
-create_bound_vector(LPInstance instance)
-{
-    int m = instance.constraints.size();
-    std::vector<double> b;
+/*
+void resolve_problema_artificial(Tabela& tabela){
 
-    for (int i = 0; i < m; i++)
-        b.push_back(instance.constraints[i].bound);
+    // Trecho responsável por obter todas as informações relevantes para
+    // a solução do problema
+    std::regex padraoVariaveisNBasicas("x+\\d*");
+    int numVariaveisNBasicas = 0;
+    for (size_t i = 0; i < tabela.X.size(); i++){
+        if(std::regex_match(tabela.X[i], padraoVariaveisNBasicas)){
+            numVariaveisNBasicas++;
+        }
+    }
+    // Conjunto de variaveis X = [XN, XB, XA]
+    std::vector<std::string> XN;
+    std::vector<std::string> XB;
+    XN = getXN(tabela.X, numVariaveisNBasicas);
+    XB = getXB(tabela.X, numVariaveisNBasicas);
+    // Conjunto de matrizes A = [N|B] do escopo da função
+    std::vector<std::vector<double>> matrizN;
+    std::vector<std::vector<double>> matrizB;
+    matrizN = getMatrizN(tabela.matrizA, numVariaveisNBasicas);
+    matrizB = getMatrizB(tabela.matrizA, numVariaveisNBasicas);
+    // Conjunto de Coeficientes C = [Ctn|Ctb] do escopo da função
+    std::vector<double> Ctn;
+    std::vector<double> Ctb;
+    Ctn = getCtn(tabela.C, numVariaveisNBasicas);
+    Ctb = getCtb(tabela.C, numVariaveisNBasicas);
 
-    return b;
-}
+    // Resolve o problema artificial
+    bool soluca_otima = false;
+    while(tabela.problema_artificial){
 
-std::vector<std::vector<double>>
-create_constraint_matrix(LPInstance instance)
-{
-    int n = instance.objective.size();
-    std::vector<std::vector<double>> constraint_matrix;
+        std::vector<std::vector<double>> BInversa;
+        std::vector<std::vector<double>> colunasN;
+        std::vector<double> XB_chapeu;
+        std::vector<double> CTB;
+        std::vector<double> C_chapeu;
+        std::vector<double> Lambda_t;
 
-    for (int i = 0; i < n; i++)
-        constraint_matrix.push_back(instance.constraints[i].coefficients);
+        BInversa = calcula_inversa(
+            matrizB, tabela.matriz_I
+        );  
         
-    return constraint_matrix;
-}
+        XB_chapeu = multiplicaMatrizes(
+            BInversa, tabela.coluna_b
+        );
 
-void create_artificial_problem(std::vector<std::vector<double>> *A, std::vector<double> *c)
-{
-    int m = (*A).size();
-    int n = (*c).size();
+        CTB.assign(tabela.C.begin() + Ctn.size(), tabela.C.end());
+        Lambda_t = multiplicaMatrizes(
+            CTB, BInversa
+        );
+        for (size_t i = 0; i < Ctn.size(); i++){
+            colunasN.push_back(obtem_coluna(matrizN, i));
+            C_chapeu.push_back(tabela.C[i] - multiplica_vetores(colunasN[i], Lambda_t));
+        }
+        std::cout << "\n";
+        std::cout << "ColunasN" << std::endl;
+        for (size_t i = 0; i < colunasN.size(); i++){
+            for (size_t j = 0; j < colunasN[i].size(); j++){
+                std::cout << colunasN[i][j] << " "; 
+            }
+            std::cout << "\n";
+        }  
+        
+        exibeVetor_double(C_chapeu, "C_chapeu");
 
-    // Zera os coeficientes da função objetivo e adiciona as variáveis artificiais
-    for (int i = 0; i < (n + m); i++) {
-        if (i >= n)
-            (*c).push_back(1);
-        else
-            (*c)[i] = 0;
-    }
+        soluca_otima = checa_solucao_otima(C_chapeu);
+        if (soluca_otima){
+            std::cout << "Solucao Basica Viavel (SBV) para o problema artificial encontrada! \n";
+            tabela.problema_artificial = false;
+        }else{
+            int var_entrada = 0;
+            for (size_t i = 0; i < C_chapeu.size(); i++){
+                if (C_chapeu[i] < C_chapeu[var_entrada]){
+                    var_entrada = i;
+                }
+            }
 
-    // Adiciona as variáveis artificiais nas restrições
-    for (int i = 0; i < m; i++) {
-        for (int j = n; j < (n + m); j++) {
-            if ((i + m) == j)
-                (*A)[i].push_back(1);
-            else
-                (*A)[i].push_back(0);            
+            std::vector<double> Y = multiplicaMatrizes(BInversa, colunasN[var_entrada]);
+            int var_saida = 0;
+            double E = 9999;
+            for (size_t i = 0; i < XB_chapeu.size(); i++){
+                if (XB_chapeu[i]/Y[i] >= 0 && XB_chapeu[i]/Y[i] < E){
+                    var_saida = i;
+                }   
+            }
+
+            std::cout << "Sai: " << tabela.X[var_saida + XN.size()] << std::endl;
+            std::cout << "Entra: " << tabela.X[var_entrada] << std::endl;
+
+            troca_coluna(tabela, tabela.matrizA, var_saida + XN.size(), var_entrada);
+            troca_coluna(tabela, tabela.X, var_saida + XN.size(), var_entrada);
+            troca_coluna(tabela, tabela.C, var_saida + XN.size(), var_entrada);
+            matrizB = getMatrizB(tabela.matrizA, numVariaveisNBasicas);
+            matrizN = getMatrizN(tabela.matrizA, numVariaveisNBasicas);
+
+
+            
+            std::cout << "Step" << std::endl;
+            int command;
+            std::cin >> command;
+            
         }
     }
 }
-
-// TODO: RETIRAR ESSA FUNÇÃO DAQUI!!!
-void print_vector(std::vector<double> v) {
-    std::cout << "C = [";
-    for (auto e: v)
-        std::cout << "," << e;
-    std::cout << "] \n";
-}
-
-void solve_artificial_problem(std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b)
-{
-    create_artificial_problem(&A, &c);
-    print_vector(c);
-    std::cout << "A = " << std::endl;
-    mostrarMatriz(A);
-    // TODO: Implementar a resolução do problema artificial
-}
-
-void simplex(LPInstance instance)   //Seria fase 1 apenas?
-{
-    instance = convert_obj_func_to_min(instance);
-
-    if (!verify_instance(instance)) {                   // Verificação de problema artificial
-        instance = convert_to_standard_form(instance);
-        auto A = create_constraint_matrix(instance);    // Matriz [A] = [N | B]
-        auto c = create_cost_vector(instance);          // Vetor [Ctn | Ctb]
-        auto b = create_bound_vector(instance);         // Coluna [b]
-        solve_artificial_problem(A, c, b);
-    }
-}
-
-// TODO: Algoritmo para encontrar solução ótima
-// TODO: Encontrar vetores B e N
-// TODO: Separar matrizes B e N
-// TODO: Calculo de solução Básica (zerando não básicas)
+*/
+#endif

@@ -1,106 +1,48 @@
-#include <iostream>
-#include "utils/InstanceReader.h"
-#include "utils/Simplex.h"
+#include "utils/tabela.h"
+#include "utils/lpreader.h"
+#include "utils/simplex.h"
+#include "utils/exibicao.h"
 
-int executar_otimizacao_d(std::string filename, bool show_steps);
-int executar_otimizacao_p(std::string filename);
+#include <iostream>
+#include <string>
 
 int main(){
-    bool show_steps = true;         // Altere para "false" para obter o resultado direto
-    std::string filename = "C:/src/VSCode_Workspace/C/TrabSimplex/a.lp"; 
-    executar_otimizacao_d(filename, show_steps);
-    //executar_otimizacao_p(filename);
-}
+    // Leitura do arquivo .lp
+    std::string nomeArquivo = "C:/src/VSCode_Workspace/C/NewVersion_TrabSimplex/lista_problemas/exerc57.lp";
+    // Cria a instância da tabela
+    Tabela tabela = lerArquivo(nomeArquivo);
+    gera_identidade(tabela);
 
-int executar_otimizacao_d(std::string filename, bool show_steps)
-{
-    LPInstance instance = convert_obj_func_to_min(loadFile());
+    // Tabela Original do problema
+    if(tabela.passo_a_passo){
+        exibeTabela(tabela);
+    }
 
-    if ( show_steps == false){
-        std::cout << "Modo step-by-step Desativado" << std::endl;
-        simplex(instance);
-        return 0;
+    // Transforma a função para a forma padrão
+    formalizar_tabela(tabela);
+    if(tabela.passo_a_passo){
+        std::cout << "Formaliza Tabela" << std::endl;
+        exibeTabela(tabela);
     }
-    
-    if (instance.type)
-    {
-        std::cout << "Tipo de função: Maximizar" << std::endl;
-    }
-    else
-    {
-        std::cout << "Tipo de função: Minimizar" << std::endl;
-    }
-    std::cout << "\n";
-    std::cout << "Funcao objetivo: ";
-    for (size_t i = 0; i < instance.objective.size(); ++i)
-    {
-        if (i != 0)
-        {
-            std::cout << " ";
+
+    // Se necessário, transforma a tabela em um problema artificial
+    // Salva uma cópia da coluna C caso haja problema artificial que altera C
+    std::vector<double> C_copy = tabela.C;
+    if (tabela.problema_artificial){
+        artificializar(tabela);
+        if(tabela.passo_a_passo){
+            std::cout << "Necessita Problema Artificial" << std::endl;
+            exibeTabela(tabela);
         }
-        std::cout << instance.objective[i] << "x" << (i + 1);
     }
-    std::cout << std::endl;
+    // Transforma a matriz B em matriz identidade para facilitar a manipulação
+    //checa_identidade_B(tabela);
 
-    std::cout << "Restricoes:" << std::endl;
-    for (const Constraint &constraint : instance.constraints)
-    {
-        for (size_t i = 0; i < constraint.coefficients.size(); ++i)
-        {
-            if (i != 0)
-            {
-                std::cout << " + ";
-            }
-            std::cout << constraint.coefficients[i] << "x" << (i + 1);
-        }
-        std::cout << " " << constraint.signal << " " << constraint.bound << std::endl;
+    //resolve_problema_artificial(tabela);
+
+    while(tabela.problema){
+        std::cout << std::endl;
     }
 
-    std::cout << "Bounds:" << std::endl;
-    for (size_t i = 0; i < instance.bounds.size(); ++i)
-    {
-        std::cout << instance.bounds[i].lower_bound << " " << instance.bounds[i].lower_bound_sign << " "
-                  << " x" << (i + 1) << " " << instance.bounds[i].upper_bound_sign << " " << instance.bounds[i].upper_bound << std::endl;
-    }
-    simplex(instance);
     return 0;
-}
-
-int executar_otimizacao_p(std::string filename)
-{
-    LPInstance instance = loadFile();
-
-    std::cout << "Tipo: " << (instance.type ? "Maximize" : "Minimize") << std::endl;
-
-    std::cout << "Funcao objetivo: ";
-    for (size_t i = 0; i < instance.objective.size(); ++i)
-    {
-        if (i != 0)
-        {
-            std::cout << " ";
-        }
-        std::cout << instance.objective[i] << "x" << (i + 1);
-    }
-    std::cout << std::endl;
-
-    std::cout << "Restricoes:" << std::endl;
-    for (const Constraint &constraint : instance.constraints)
-    {
-        for (size_t i = 0; i < constraint.coefficients.size(); ++i)
-        {
-            if (i != 0)
-            {
-                std::cout << " + ";
-            }
-            std::cout << constraint.coefficients[i] << "x" << (i + 1);
-        }
-        std::cout << " " << constraint.signal << " " << constraint.bound << std::endl;
-    }
-
-    std::cout << "Bounds:" << std::endl;
-    for (size_t i = 0; i < instance.bounds.size(); ++i)
-    {
-        std::cout << instance.bounds[i].lower_bound << " " << instance.bounds[i].lower_bound_sign << " "
-                  << " x" << (i + 1) << " " << instance.bounds[i].upper_bound_sign << " " << instance.bounds[i].upper_bound << std::endl;
-    }
 }
