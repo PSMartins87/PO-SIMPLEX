@@ -119,17 +119,22 @@ void print_vector(std::vector<double> v) {
     std::cout << "] \n";
 }
 
-void solve_artificial_problem(
+LPInstance solve_artificial_problem(
     std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b, int n
     )
 {
     bool solved = false;
+    auto A = create_constraint_matrix(instance);    // Matriz [A] = [N | B]
+    auto c = create_cost_vector(instance);          // Vetor [Ctn | Ctb]
+    auto b = create_bound_vector(instance);         // Coluna [b]
+    std::vector<std::vector<double>> I;             // Cria a matriz identidade [I]
+    preencheIdentidade(I, A.size());
+
     create_artificial_problem(&A, &c, n);
+
     print_vector(c);
     std::cout << "A = " << std::endl;
     mostrarMatriz(A);
-    std::vector<std::vector<double>> I;
-    preencheIdentidade(I, A.size());
 
     while(!solved){
         // Obtem B
@@ -206,19 +211,24 @@ void solve_artificial_problem(
         //FALTA IMPLEMENTAR TROCA DE COLUNAS
     }
 
+    for (size_t i = 0; i < c.size(); i++){
+        if (c[i] == 1){
+            // FALTA IMPLEMENTAR ELIMINAR COLUNAS
+            n--;
+        }
+    }
 
+    return instance;
 }
 
 void simplex(LPInstance instance)   //Seria fase 1 apenas?
 {
     instance = convert_obj_func_to_min(instance);
+    int n = instance.objective.size();
 
     if (!verify_instance(instance)) {                   // Verificação de problema artificial
-        int n = instance.objective.size();
         instance = convert_to_standard_form(instance);
-        auto A = create_constraint_matrix(instance);    // Matriz [A] = [N | B]
-        auto c = create_cost_vector(instance);          // Vetor [Ctn | Ctb]
-        auto b = create_bound_vector(instance);         // Coluna [b]
-        solve_artificial_problem(A, c, b, n);
+        instance = solve_artificial_problem(instance, &n);
     }
+    // solve_problem(lpinstance);
 }
