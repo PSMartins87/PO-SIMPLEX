@@ -148,6 +148,62 @@ void solve_artificial_problem(
         calcularInversa(reverseB, I, reverseB.size());
         std::cout << "reverseB = " << std::endl;
         mostrarMatriz(reverseB);
+        // RESOLVER ESSE PROBLEMA ACIMA
+        // CORRIGIR calcularInversa
+
+        std::vector<std::vector<double>> hatX = multiplicarMatrizes(reverseB, b);
+        std::vector<std::vector<double>> lambdaT = multiplicarMatrizes(c, reverseB);
+
+        std::vector<double> hatC;
+        std::vector<std::vector<double>> subA;
+        int result, exit_var, entry_var, smallest_result = 1;
+
+        for (size_t i = 0; i < n; i++){
+            for (size_t a_i = 0; a_i < A.size(); a_i++){
+                for (size_t a_j = 0; a_j < A[a_i].size(); a_j++){
+                    if (a_j == i){
+                        subA.push_back(A[a_i][a_j]);
+                    }
+                }
+            }
+            result = c[i] - multiplicarMatrizes(lambdaT, sub_A);
+            if (result < smallest_result){
+                smallest_result = result;
+                entry_var = i;
+            }
+            hatC.push_back(result);
+            result.clear();
+            subA.clear();
+        }
+        
+        solved = true;
+        for (size_t i = 0; i < hatC.size(); i++){
+            if (hatC[i] < 0){
+                solved = false;
+            }
+        }
+        if (solved){
+            break;
+        }
+
+        for (size_t a_i = 0; a_i < A.size(); a_i++){
+            for (size_t a_j = 0; a_j < A[a_i].size(); a_j++){
+                if (a_j == entry_var){
+                    subA.push_back(A[a_i][a_j]);
+                }
+            }
+        }
+        std::vector<std::vector<double>> Y = multiplicarMatrizes(reverseB, subA);
+        double hatE;
+        result = 9999;
+        for (size_t i = 0; i < Y.size(); i++){
+            if (hatX[i] / Y[i] < result){
+                result = hatX[i] / Y[i];
+                exit_var = i;
+            }
+        }
+
+        //FALTA IMPLEMENTAR TROCA DE COLUNAS
     }
 
 
