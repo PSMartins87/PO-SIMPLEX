@@ -8,7 +8,7 @@ LPInstance convert_obj_func_to_min(LPInstance instance)
         std::cout << "Tipo Maximizar - converte para minimizar" << std::endl;
         LPInstance new_instance = instance;
         instance.type = false;
-        for (int i = 0; i < instance.objective.size(); i++)
+        for (size_t i = 0; i < instance.objective.size(); i++)
             new_instance.objective[i] = new_instance.objective[i] * (-1);   // Inversão da função objetivo
         return new_instance;
     }
@@ -123,14 +123,34 @@ void solve_artificial_problem(
     std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b, int n
     )
 {
-
-    std::cout << "A before= " << std::endl;
-    mostrarMatriz(A);
+    bool solved = false;
     create_artificial_problem(&A, &c, n);
     print_vector(c);
     std::cout << "A = " << std::endl;
     mostrarMatriz(A);
-    // TODO: Implementar a resolução do problema artificial
+    std::vector<std::vector<double>> I;
+    preencheIdentidade(I, A.size());
+
+    while(!solved){
+        // Obtem B
+        std::vector<std::vector<double>> reverseB;
+        for (size_t i = 0; i < A.size(); i++){
+            std::vector<double> b_line;
+            for (size_t j = n; j < A[i].size(); j++){
+                b_line.push_back(A[i][j]);
+            }
+            reverseB.push_back(b_line);
+            b_line.clear();
+        }
+        std::cout << "B = " << std::endl;
+        mostrarMatriz(reverseB);
+        // Obtem B inversa
+        calcularInversa(reverseB, I, reverseB.size());
+        std::cout << "reverseB = " << std::endl;
+        mostrarMatriz(reverseB);
+    }
+
+
 }
 
 void simplex(LPInstance instance)   //Seria fase 1 apenas?

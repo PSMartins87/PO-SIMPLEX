@@ -149,7 +149,11 @@ void zerarElementosAbaixoDiagonal(std::vector<std::vector<double>> &matriz, std:
  * @param identidade A matriz identidade correspondente.
  * @param tamanhoMatriz O tamanho da matriz (número de linhas e colunas).
  */
-void calcularInversa(std::vector<std::vector<double>> &matriz, std::vector<std::vector<double>> &identidade, int tamanhoMatriz)
+void calcularInversa(
+    std::vector<std::vector<double>> &matriz, 
+    std::vector<std::vector<double>> &identidade, 
+    int tamanhoMatriz
+)
 {
     std::vector<std::vector<double>> inversa;
     zerarElementosAcimaDiagonal(matriz, identidade, tamanhoMatriz);
