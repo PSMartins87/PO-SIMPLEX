@@ -20,8 +20,6 @@ bool verify_instance(LPInstance instance)
 {
     for (auto constraint: instance.constraints)
         if ( constraint.signal != "<" || constraint.signal != "<="){
-        // Função substituída por igualdade lógica
-        //if (constraint.signal == ">" or constraint.signal == ">=" or constraint.signal == "=")  
             std::cout << "Necessita problema artificial" << std::endl;
             return false;
         }
@@ -31,13 +29,26 @@ bool verify_instance(LPInstance instance)
 LPInstance convert_to_standard_form(LPInstance instance)
 {    
     for (int i = 0; i < instance.constraints.size(); i++) {
-        if (instance.constraints[i].signal == ">=" || instance.constraints[i].signal == ">")
-            instance.constraints[i].coefficients.push_back(-1);
-        else if (instance.constraints[i].signal == "<=" || instance.constraints[i].signal == "<")
-            instance.constraints[i].coefficients.push_back(1);
+        if (instance.constraints[i].signal == ">=" || instance.constraints[i].signal == ">"){
+            for (int index = 0; index < instance.constraints.size(); index++){
+                if (index == i){
+                    instance.constraints[index].coefficients.push_back(-1);
+                }else{
+                    instance.constraints[index].coefficients.push_back(0);
+                }
+            }
+        }         
+        else if (instance.constraints[i].signal == "<=" || instance.constraints[i].signal == "<"){
+            for (int index = 0; index < instance.constraints.size(); index++){
+                if (index == i){
+                    instance.constraints[index].coefficients.push_back(1);
+                }else{
+                    instance.constraints[index].coefficients.push_back(0);
+                }
+            }
+        }
         instance.constraints[i].signal = "=";
     }
-
     return instance;
 }
 
@@ -107,6 +118,9 @@ void print_vector(std::vector<double> v) {
 
 void solve_artificial_problem(std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b)
 {
+
+    std::cout << "A before= " << std::endl;
+    mostrarMatriz(A);
     create_artificial_problem(&A, &c);
     print_vector(c);
     std::cout << "A = " << std::endl;
@@ -126,8 +140,3 @@ void simplex(LPInstance instance)   //Seria fase 1 apenas?
         solve_artificial_problem(A, c, b);
     }
 }
-
-// TODO: Algoritmo para encontrar solução ótima
-// TODO: Encontrar vetores B e N
-// TODO: Separar matrizes B e N
-// TODO: Calculo de solução Básica (zerando não básicas)
