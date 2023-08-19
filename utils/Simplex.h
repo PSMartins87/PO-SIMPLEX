@@ -28,9 +28,9 @@ bool verify_instance(LPInstance instance)
 
 LPInstance convert_to_standard_form(LPInstance instance)
 {    
-    for (int i = 0; i < instance.constraints.size(); i++) {
+    for (size_t i = 0; i < instance.constraints.size(); i++) {
         if (instance.constraints[i].signal == ">=" || instance.constraints[i].signal == ">"){
-            for (int index = 0; index < instance.constraints.size(); index++){
+            for (size_t index = 0; index < instance.constraints.size(); index++){
                 if (index == i){
                     instance.constraints[index].coefficients.push_back(-1);
                 }else{
@@ -39,7 +39,7 @@ LPInstance convert_to_standard_form(LPInstance instance)
             }
         }         
         else if (instance.constraints[i].signal == "<=" || instance.constraints[i].signal == "<"){
-            for (int index = 0; index < instance.constraints.size(); index++){
+            for (size_t index = 0; index < instance.constraints.size(); index++){
                 if (index == i){
                     instance.constraints[index].coefficients.push_back(1);
                 }else{
@@ -84,26 +84,29 @@ create_constraint_matrix(LPInstance instance)
     return constraint_matrix;
 }
 
-void create_artificial_problem(std::vector<std::vector<double>> *A, std::vector<double> *c)
+void create_artificial_problem(std::vector<std::vector<double>> *A, std::vector<double> *c, int n)
 {
-    int m = (*A).size();
-    int n = (*c).size();
+    bool artificial_line = true;
 
-    // Zera os coeficientes da função objetivo e adiciona as variáveis artificiais
-    for (int i = 0; i < (n + m); i++) {
-        if (i >= n)
-            (*c).push_back(1);
-        else
-            (*c)[i] = 0;
+    for (size_t c_index = 0; c_index < (*c).size(); c_index++){
+        (*c)[c_index] = 0;
     }
 
-    // Adiciona as variáveis artificiais nas restrições
-    for (int i = 0; i < m; i++) {
-        for (int j = n; j < (n + m); j++) {
-            if ((i + m) == j)
-                (*A)[i].push_back(1);
-            else
-                (*A)[i].push_back(0);            
+    for (size_t i = 0; i < (*A).size(); i++){
+        for (size_t j = n; j < (*A)[i].size(); j++){
+            if ((*A)[i][j] != 0){
+                artificial_line = false;
+            }
+        }
+        if (artificial_line == true){
+            for (size_t index = 0; index < (*A).size(); index++){
+                if (index == i){
+                    (*A)[index].push_back(1);
+                    (*c).push_back(1);
+                }else{
+                    (*A)[index].push_back(0);
+                }
+            }
         }
     }
 }
@@ -116,12 +119,14 @@ void print_vector(std::vector<double> v) {
     std::cout << "] \n";
 }
 
-void solve_artificial_problem(std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b)
+void solve_artificial_problem(
+    std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b, int n
+    )
 {
 
     std::cout << "A before= " << std::endl;
     mostrarMatriz(A);
-    create_artificial_problem(&A, &c);
+    create_artificial_problem(&A, &c, n);
     print_vector(c);
     std::cout << "A = " << std::endl;
     mostrarMatriz(A);
@@ -133,10 +138,11 @@ void simplex(LPInstance instance)   //Seria fase 1 apenas?
     instance = convert_obj_func_to_min(instance);
 
     if (!verify_instance(instance)) {                   // Verificação de problema artificial
+        int n = instance.objective.size();
         instance = convert_to_standard_form(instance);
         auto A = create_constraint_matrix(instance);    // Matriz [A] = [N | B]
         auto c = create_cost_vector(instance);          // Vetor [Ctn | Ctb]
         auto b = create_bound_vector(instance);         // Coluna [b]
-        solve_artificial_problem(A, c, b);
+        solve_artificial_problem(A, c, b, n);
     }
 }
