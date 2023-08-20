@@ -15,6 +15,24 @@ void preencheIdentidade(std::vector<std::vector<double>> &matriz, int tamanhoMat
         matriz[i][i] = 1;
     }
 }
+
+std::vector<double> multiplicaMatrizVetor(
+    std::vector<std::vector<double>> matriz, std::vector<double> vetor
+){
+    std::vector<double> vetor_resultante;
+    double soma = 0;
+
+    for (size_t i = 0; i < matriz.size(); i++){
+        for (size_t j = 0; j < matriz[i].size(); j++){
+            soma += (matriz[i][j] + vetor[j]);      
+        }
+        vetor_resultante.push_back(soma);
+        soma = 0;
+    }
+
+    return vetor_resultante;
+}
+
 LPInstance trocaColunas(LPInstance instance, int entrada, int saida){
     std::swap(instance.objective[entrada], instance.objective[saida]);
     for (size_t i = 0; i < instance.constraints.size(); i++){
@@ -171,6 +189,48 @@ void zerarElementosAbaixoDiagonal(std::vector<std::vector<double>> &matriz, std:
     }
 }
 
+bool checkCasoEspecial(
+    std::vector<std::vector<double>> inversa
+){
+    bool special_case = false;
+    int num_ones = 0,  num_zeros = 0;
+
+    for (size_t i = 0; i < inversa.size(); i++){
+        for (size_t j = 0; j < inversa[i].size(); j++){
+            if (inversa[i][j] == 1){
+                num_ones++;
+            }else if (inversa[i][j] == 0){
+                num_zeros++;
+            }
+        }
+        //std::cout << "N0: " << num_zeros << " N1: " << num_ones << std::endl;
+        // Verifica se a matriz possui propriedades de identidade
+        // (cada linha com um '1' e o restante de 0)
+        if ( (num_zeros == (inversa[i].size() - 1)) || (num_ones == 1)){
+            if ( ( (num_ones + num_zeros) == inversa[i].size() && special_case == false) ){
+                special_case = true;
+            }
+        }
+        num_ones = 0;
+        num_zeros = 0;
+    }
+    std::cout << "IS Special case?" << special_case << std::endl;
+    return special_case;
+}
+
+std::vector<std::vector<double>> inversaCasoEspecial(
+    std::vector<std::vector<double>> inversa
+){
+    for (size_t i = 0; i < inversa.size(); i++){
+        for (size_t j = 0; j < inversa[i].size(); j++){
+            if (inversa[i][j] == 1 && i != j){
+                std::swap(inversa[i][i], inversa[i][j]);
+            }
+        }
+    }
+    return inversa;
+}
+
 /**
  * @brief Calcula a matriz inversa usando eliminação de Gauss-Jordan.
  *
@@ -178,23 +238,33 @@ void zerarElementosAbaixoDiagonal(std::vector<std::vector<double>> &matriz, std:
  * @param identidade A matriz identidade correspondente.
  * @param tamanhoMatriz O tamanho da matriz (número de linhas e colunas).
  */
-void calcularInversa(
+std::vector<std::vector<double>> calcularInversa(
     std::vector<std::vector<double>> &matriz, 
     std::vector<std::vector<double>> &identidade, 
     int tamanhoMatriz
 )
 {
-    std::vector<std::vector<double>> inversa;
-    zerarElementosAcimaDiagonal(matriz, identidade, tamanhoMatriz);
-    zerarElementosAbaixoDiagonal(matriz, identidade, tamanhoMatriz);
-    for (int i = 0; i < tamanhoMatriz; i++)
-    {
-        double pivo = matriz[i][i];
-        for (int j = 0; j < tamanhoMatriz; j++)
+    bool casoEspecial = false;
+    casoEspecial = checkCasoEspecial(matriz);
+    std::vector<std::vector<double>> inversa (tamanhoMatriz, std::vector<double> (tamanhoMatriz, 0));
+
+    if (casoEspecial){
+        std::cout << "Caso Especial de Matriz inversa (Identidade deslocada)" << std::endl;
+        inversa = inversaCasoEspecial(matriz);
+    }else{
+        zerarElementosAcimaDiagonal(matriz, identidade, tamanhoMatriz);
+        zerarElementosAbaixoDiagonal(matriz, identidade, tamanhoMatriz);
+        for (int i = 0; i < tamanhoMatriz; i++)
         {
-            inversa[i][j] = identidade[i][j] / pivo;
+            double pivo = matriz[i][i];
+            for (int j = 0; j < tamanhoMatriz; j++)
+            {
+                inversa[i][j] = identidade[i][j] / pivo;
+            }
         }
     }
+
+    return inversa;
 }
 
 /**
@@ -242,7 +312,7 @@ double calculaDeterminante(const std::vector<std::vector<double>> &matriz, int t
 }
 
 void print_vector(std::vector<double> v) {
-    std::cout << "C = [";
+    std::cout << "V = [";
     for (auto e: v)
         std::cout << "," << e;
     std::cout << "] \n";
