@@ -213,7 +213,7 @@ LPInstance solve_artificial_problem(
 
     for (size_t i = 0; i < c.size(); i++){
         if (c[i] == 1){
-            // FALTA IMPLEMENTAR ELIMINAR COLUNAS
+            eliminaColuna(instance, i);
             n--;
         }
     }

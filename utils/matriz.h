@@ -16,6 +16,25 @@ void preencheIdentidade(std::vector<std::vector<double>> &matriz, int tamanhoMat
     }
 }
 
+LPInstance eliminaColuna(LPInstance instance, int coluna){
+    // Elimina elemento em C
+    auto it_c = std::find(instance.objective.begin(), instance.objective.end(), coluna);
+    if (it_c != instance.objective.end()){
+        instance.objective.erase(it_c);
+    }
+
+
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        auto it_a = std::find(
+            instance.constraints[i].coefficients.begin(), instance.constraints[i].coefficients.end(), coluna
+        );
+        if (it_a != instance.constraints[i].coefficients.end()) {
+            instance.constraints[i].coefficients.erase(it_a);
+        }
+    }
+
+    return instance;
+}
 /**
  * @brief Multiplica duas matrizes.
  *
