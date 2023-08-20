@@ -15,6 +15,16 @@ void preencheIdentidade(std::vector<std::vector<double>> &matriz, int tamanhoMat
         matriz[i][i] = 1;
     }
 }
+LPInstance trocaColunas(LPInstance instance, int entrada, int saida){
+    std::swap(instance.objective[entrada], instance.objective[saida]);
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        std::swap(
+            instance.constraints[i].coefficients[entrada], instance.constraints[i].coefficients[saida]
+        );
+    }
+    return instance;
+}
+
 
 LPInstance eliminaColuna(LPInstance instance, int coluna){
     // Elimina elemento em C

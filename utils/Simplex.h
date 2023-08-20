@@ -208,12 +208,12 @@ LPInstance solve_artificial_problem(
             }
         }
 
-        //FALTA IMPLEMENTAR TROCA DE COLUNAS
+        instance = trocaColunas(instace, entry_var, exit_var);
     }
 
     for (size_t i = 0; i < c.size(); i++){
         if (c[i] == 1){
-            eliminaColuna(instance, i);
+            instance = eliminaColuna(instance, i);
             n--;
         }
     }
