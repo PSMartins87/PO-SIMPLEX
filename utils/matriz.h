@@ -240,3 +240,10 @@ double calculaDeterminante(const std::vector<std::vector<double>> &matriz, int t
         return determinante;
     }
 }
+
+void print_vector(std::vector<double> v) {
+    std::cout << "C = [";
+    for (auto e: v)
+        std::cout << "," << e;
+    std::cout << "] \n";
+}

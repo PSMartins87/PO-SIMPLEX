@@ -1,6 +1,36 @@
 #include "./InstanceReader.h"
 #include "./matriz.h"
 
+void check(){
+    std::cout << "CHECK" << std::endl;
+}
+
+void mostrarMatrizA(LPInstance instance){
+    std::cout << "A = " << std::endl;
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        for (size_t j = 0; j < instance.constraints[i].coefficients.size(); j++){
+            std::cout << instance.constraints[i].coefficients[j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void mostrarVetorObjetivo(LPInstance instance){
+    std::cout << "C = [";
+    for (size_t i = 0; i < instance.objective.size(); i++){
+        std::cout << instance.objective[i] << ", ";
+    }
+    std::cout << "]" << std::endl;
+}
+
+void mostrarVetorLimite(LPInstance instance){
+    std::cout << "b = [";
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        std::cout << instance.constraints[i].bound << ", ";
+    }
+    std::cout << "]" << std::endl;
+}
+
 LPInstance convert_obj_func_to_min(LPInstance instance)
 {   
     if (instance.type)
@@ -30,6 +60,7 @@ LPInstance convert_to_standard_form(LPInstance instance)
 {    
     for (size_t i = 0; i < instance.constraints.size(); i++) {
         if (instance.constraints[i].signal == ">=" || instance.constraints[i].signal == ">"){
+            instance.objective.push_back(0);
             for (size_t index = 0; index < instance.constraints.size(); index++){
                 if (index == i){
                     instance.constraints[index].coefficients.push_back(-1);
@@ -39,6 +70,7 @@ LPInstance convert_to_standard_form(LPInstance instance)
             }
         }         
         else if (instance.constraints[i].signal == "<=" || instance.constraints[i].signal == "<"){
+            instance.objective.push_back(0);
             for (size_t index = 0; index < instance.constraints.size(); index++){
                 if (index == i){
                     instance.constraints[index].coefficients.push_back(1);
@@ -84,71 +116,78 @@ create_constraint_matrix(LPInstance instance)
     return constraint_matrix;
 }
 
-void create_artificial_problem(std::vector<std::vector<double>> *A, std::vector<double> *c, int n)
+LPInstance create_artificial_problem(LPInstance instance)
 {
     bool artificial_line = true;
 
-    for (size_t c_index = 0; c_index < (*c).size(); c_index++){
-        (*c)[c_index] = 0;
+    for (size_t c_index = 0; c_index < instance.objective.size(); c_index++){
+        instance.objective[c_index] = 0;
     }
 
-    for (size_t i = 0; i < (*A).size(); i++){
-        for (size_t j = n; j < (*A)[i].size(); j++){
-            if ((*A)[i][j] != 0){
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        for (size_t j = instance.var_n; j < instance.constraints[i].coefficients.size(); j++){
+            if (instance.constraints[i].coefficients[j] != 0){
                 artificial_line = false;
             }
         }
         if (artificial_line == true){
-            for (size_t index = 0; index < (*A).size(); index++){
+            for (size_t index = 0; index < instance.constraints.size(); index++){
                 if (index == i){
-                    (*A)[index].push_back(1);
-                    (*c).push_back(1);
+                    instance.constraints[index].coefficients.push_back(1);
+                    instance.objective.push_back(1);
                 }else{
-                    (*A)[index].push_back(0);
+                    instance.constraints[index].coefficients.push_back(0);
                 }
             }
         }
+        artificial_line = true;
     }
+
+    return instance;
 }
 
-// TODO: RETIRAR ESSA FUNÇÃO DAQUI!!!
-void print_vector(std::vector<double> v) {
-    std::cout << "C = [";
-    for (auto e: v)
-        std::cout << "," << e;
-    std::cout << "] \n";
-}
-
-LPInstance solve_artificial_problem(
-    std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b, int n
-    )
+LPInstance solve_artificial_problem( LPInstance instance )
 {
     bool solved = false;
-    auto A = create_constraint_matrix(instance);    // Matriz [A] = [N | B]
-    auto c = create_cost_vector(instance);          // Vetor [Ctn | Ctb]
-    auto b = create_bound_vector(instance);         // Coluna [b]
     std::vector<std::vector<double>> I;             // Cria a matriz identidade [I]
-    preencheIdentidade(I, A.size());
+    preencheIdentidade(I, instance.constraints.size());
 
-    create_artificial_problem(&A, &c, n);
+    //mostrarVetorObjetivo(instance);  
+    //mostrarMatrizA(instance);
+    instance = create_artificial_problem(instance);
 
-    print_vector(c);
-    std::cout << "A = " << std::endl;
-    mostrarMatriz(A);
+    mostrarVetorObjetivo(instance);  
+    mostrarMatrizA(instance);
 
     while(!solved){
-        // Obtem B
+        // Obtem C (na forma de matriz), necessário para trabalhar com multiplicação de matrizes
+        std::vector<std::vector<double>> c_matrix;
+        std::vector<double> c_matrix_line;
+
+        for (size_t i = 0; i < instance.objective.size(); i++){
+            c_matrix_line.push_back(instance.objective[i]);
+        }
+        c_matrix.push_back(c_matrix_line);
+        // Ontem b (na forma de matriz)
+        std::vector<std::vector<double>> b_matrix;
+        std::vector<double> b_matrix_line;
+        for (size_t i = 0; i < instance.constraints.size(); i++){
+            b_matrix_line.push_back(instance.constraints[i].bound);
+        }
+        b_matrix.push_back(b_matrix_line);
+        // Obtem [B] A - N
         std::vector<std::vector<double>> reverseB;
-        for (size_t i = 0; i < A.size(); i++){
+        for (size_t i = 0; i < instance.constraints.size() ; i++){
             std::vector<double> b_line;
-            for (size_t j = n; j < A[i].size(); j++){
-                b_line.push_back(A[i][j]);
+            for (size_t j = instance.var_n; j < instance.constraints[i].coefficients.size(); j++){
+                b_line.push_back(instance.constraints[i].coefficients[j]);
             }
             reverseB.push_back(b_line);
             b_line.clear();
         }
         std::cout << "B = " << std::endl;
         mostrarMatriz(reverseB);
+        // Parte com problema
         // Obtem B inversa
         calcularInversa(reverseB, I, reverseB.size());
         std::cout << "reverseB = " << std::endl;
@@ -156,28 +195,30 @@ LPInstance solve_artificial_problem(
         // RESOLVER ESSE PROBLEMA ACIMA
         // CORRIGIR calcularInversa
 
-        std::vector<std::vector<double>> hatX = multiplicarMatrizes(reverseB, b);
-        std::vector<std::vector<double>> lambdaT = multiplicarMatrizes(c, reverseB);
+        std::vector<std::vector<double>> hatX = multiplicarMatrizes(reverseB, b_matrix);
+        std::vector<std::vector<double>> lambdaT = multiplicarMatrizes(c_matrix, reverseB);
 
         std::vector<double> hatC;
         std::vector<std::vector<double>> subA;
         int result, exit_var, entry_var, smallest_result = 1;
 
-        for (size_t i = 0; i < n; i++){
-            for (size_t a_i = 0; a_i < A.size(); a_i++){
-                for (size_t a_j = 0; a_j < A[a_i].size(); a_j++){
+        for (size_t i = 0; i < instance.var_n; i++){
+            for (size_t a_i = 0; a_i < instance.constraints.size(); a_i++){
+                for (size_t a_j = 0; a_j < instance.constraints[a_i].coefficients.size(); a_j++){
                     if (a_j == i){
-                        subA.push_back(A[a_i][a_j]);
+                        //subA.push_back(instance.constraints[a_i].coefficients[a_j]);
                     }
                 }
             }
-            result = c[i] - multiplicarMatrizes(lambdaT, sub_A);
+            // Resolver incompatibilidade multiplicarMatrizes na forma de double
+            mostrarMatriz(multiplicarMatrizes(lambdaT, subA));
+            //result = instance.objective[i] - multiplicarMatrizes(lambdaT, subA);
             if (result < smallest_result){
                 smallest_result = result;
                 entry_var = i;
             }
             hatC.push_back(result);
-            result.clear();
+            result = 0;
             subA.clear();
         }
         
@@ -187,34 +228,36 @@ LPInstance solve_artificial_problem(
                 solved = false;
             }
         }
+
         if (solved){
             break;
         }
 
-        for (size_t a_i = 0; a_i < A.size(); a_i++){
-            for (size_t a_j = 0; a_j < A[a_i].size(); a_j++){
+        for (size_t a_i = 0; a_i < instance.constraints.size(); a_i++){
+            for (size_t a_j = 0; a_j < instance.constraints[a_i].coefficients.size(); a_j++){
                 if (a_j == entry_var){
-                    subA.push_back(A[a_i][a_j]);
+                    subA[a_i].push_back(instance.constraints[a_i].coefficients[a_j]);
                 }
             }
         }
+
         std::vector<std::vector<double>> Y = multiplicarMatrizes(reverseB, subA);
         double hatE;
         result = 9999;
         for (size_t i = 0; i < Y.size(); i++){
-            if (hatX[i] / Y[i] < result){
-                result = hatX[i] / Y[i];
+            if ( ( hatX[0][i] / Y[0][i] ) < result){
+                result = hatX[0][i] / Y[0][i];
                 exit_var = i;
             }
         }
 
-        instance = trocaColunas(instace, entry_var, exit_var);
+        instance = trocaColunas(instance, entry_var, exit_var);
     }
 
-    for (size_t i = 0; i < c.size(); i++){
-        if (c[i] == 1){
+    for (size_t i = 0; i < instance.objective.size(); i++){
+        if (instance.objective[i] == 1){
             instance = eliminaColuna(instance, i);
-            n--;
+            instance.var_n--;
         }
     }
 
@@ -224,11 +267,11 @@ LPInstance solve_artificial_problem(
 void simplex(LPInstance instance)   //Seria fase 1 apenas?
 {
     instance = convert_obj_func_to_min(instance);
-    int n = instance.objective.size();
+    instance.var_n = instance.objective.size();
 
     if (!verify_instance(instance)) {                   // Verificação de problema artificial
         instance = convert_to_standard_form(instance);
-        instance = solve_artificial_problem(instance, &n);
+        instance = solve_artificial_problem(instance);
     }
     // solve_problem(lpinstance);
 }
