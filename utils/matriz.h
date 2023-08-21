@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include "InstanceReader.h"
 
 /**
  * @brief Preenche uma matriz com a matriz identidade.
@@ -15,7 +16,36 @@ void preencheIdentidade(std::vector<std::vector<double>> &matriz, int tamanhoMat
         matriz[i][i] = 1;
     }
 }
+LPInstance trocaColunas(LPInstance instance, int entrada, int saida){
+    std::swap(instance.objective[entrada], instance.objective[saida]);
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        std::swap(
+            instance.constraints[i].coefficients[entrada], instance.constraints[i].coefficients[saida]
+        );
+    }
+    return instance;
+}
 
+
+LPInstance eliminaColuna(LPInstance instance, int coluna){
+    // Elimina elemento em C
+    auto it_c = std::find(instance.objective.begin(), instance.objective.end(), coluna);
+    if (it_c != instance.objective.end()){
+        instance.objective.erase(it_c);
+    }
+
+
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        auto it_a = std::find(
+            instance.constraints[i].coefficients.begin(), instance.constraints[i].coefficients.end(), coluna
+        );
+        if (it_a != instance.constraints[i].coefficients.end()) {
+            instance.constraints[i].coefficients.erase(it_a);
+        }
+    }
+
+    return instance;
+}
 /**
  * @brief Multiplica duas matrizes.
  *
@@ -142,6 +172,15 @@ void zerarElementosAbaixoDiagonal(std::vector<std::vector<double>> &matriz, std:
     }
 }
 
+void print_matriz(std::vector<std::vector<double>> matriz)
+{
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++)
+            std::cout << matriz[i][j] << " ";
+        std::cout << std::endl;
+    }
+}
+
 /**
  * @brief Calcula a matriz inversa usando eliminação de Gauss-Jordan.
  *
@@ -149,11 +188,16 @@ void zerarElementosAbaixoDiagonal(std::vector<std::vector<double>> &matriz, std:
  * @param identidade A matriz identidade correspondente.
  * @param tamanhoMatriz O tamanho da matriz (número de linhas e colunas).
  */
-void calcularInversa(std::vector<std::vector<double>> &matriz, std::vector<std::vector<double>> &identidade, int tamanhoMatriz)
+void calcularInversa(
+    std::vector<std::vector<double>> &matriz, 
+    std::vector<std::vector<double>> &identidade, 
+    int tamanhoMatriz
+)
 {
-    std::vector<std::vector<double>> inversa;
+    std::vector<std::vector<double>> inversa (tamanhoMatriz, std::vector<double> (tamanhoMatriz, 0));
     zerarElementosAcimaDiagonal(matriz, identidade, tamanhoMatriz);
     zerarElementosAbaixoDiagonal(matriz, identidade, tamanhoMatriz);
+    print_matriz(identidade);
     for (int i = 0; i < tamanhoMatriz; i++)
     {
         double pivo = matriz[i][i];

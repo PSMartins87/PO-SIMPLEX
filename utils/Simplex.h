@@ -1,6 +1,26 @@
 #include "./InstanceReader.h"
 #include "./matriz.h"
 
+void printMatrix(const std::vector<std::vector<double>>& matrix) {
+    int rows = matrix.size();
+    int cols = matrix[0].size();
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            std::cout << matrix[i][j] << "\t";
+        }
+        std::cout << std::endl;
+    }
+}
+
+// TODO: RETIRAR ESSA FUNÇÃO DAQUI!!!
+void print_vector(std::vector<double> v) {
+    std::cout << "C = [";
+    for (auto e: v)
+        std::cout << "," << e;
+    std::cout << "] \n";
+}
+
 LPInstance convert_obj_func_to_min(LPInstance instance)
 {   
     if (instance.type)
@@ -30,14 +50,24 @@ bool verify_instance(LPInstance instance)
 
 LPInstance convert_to_standard_form(LPInstance instance)
 {    
-    for (int i = 0; i < instance.constraints.size(); i++) {
-        if (instance.constraints[i].signal == ">=" || instance.constraints[i].signal == ">")
-            instance.constraints[i].coefficients.push_back(-1);
-        else if (instance.constraints[i].signal == "<=" || instance.constraints[i].signal == "<")
-            instance.constraints[i].coefficients.push_back(1);
-        instance.constraints[i].signal = "=";
-    }
+    int m = instance.constraints.size();
+    int n = instance.objective.size();
 
+    for (int i = 0; i < instance.constraints.size(); i++) {
+        for (int j = n; j < (n + m); j++) {
+            if ((i + m) == j) {
+                if (instance.constraints[i].signal == ">=" || instance.constraints[i].signal == ">")
+                    instance.constraints[i].coefficients.push_back(-1);
+                else if (instance.constraints[i].signal == "<=" || instance.constraints[i].signal == "<")
+                    instance.constraints[i].coefficients.push_back(1);
+                else if (instance.constraints[i].signal == "=")
+                    instance.constraints[i].coefficients.push_back(0);
+                instance.constraints[i].signal = "=";
+            } else {
+                instance.constraints[i].coefficients.push_back(0);
+            }
+        }
+    }
     return instance;
 }
 
@@ -46,17 +76,21 @@ create_cost_vector(LPInstance instance)
 {
     std::vector<double> c (instance.objective);
 
+    for (int i = 0; i < instance.constraints.size(); i++)
+        c.push_back(0);
+
     return c;
 }
 
-std::vector<double>
-create_bound_vector(LPInstance instance)
+std::vector<std::vector<double>>
+create_bound_matrix(LPInstance instance)
 {
     int m = instance.constraints.size();
-    std::vector<double> b;
+    std::vector<std::vector<double>> b (m, std::vector<double> (1, 0));
 
     for (int i = 0; i < m; i++)
-        b.push_back(instance.constraints[i].bound);
+        for (int j = 0; j < 1; j++)
+            b[i][j] = instance.constraints[i].bound;
 
     return b;
 }
@@ -89,7 +123,7 @@ void create_artificial_problem(std::vector<std::vector<double>> *A, std::vector<
     // Adiciona as variáveis artificiais nas restrições
     for (int i = 0; i < m; i++) {
         for (int j = n; j < (n + m); j++) {
-            if ((i + m) == j)
+            if ((i + n) == j)
                 (*A)[i].push_back(1);
             else
                 (*A)[i].push_back(0);            
@@ -97,21 +131,41 @@ void create_artificial_problem(std::vector<std::vector<double>> *A, std::vector<
     }
 }
 
-// TODO: RETIRAR ESSA FUNÇÃO DAQUI!!!
-void print_vector(std::vector<double> v) {
-    std::cout << "C = [";
-    for (auto e: v)
-        std::cout << "," << e;
-    std::cout << "] \n";
+void create_basic_partition(std::vector<int> *B, int n, int m)
+{
+    for (int i = n; i < (n + m); i++)
+        (*B).push_back(i);
 }
 
-void solve_artificial_problem(std::vector<std::vector<double>> A, std::vector<double> c, std::vector<double> b)
+void create_non_basic_partition(std::vector<int> *N, int n)
 {
+    for (int i = 0; i < n; i++)
+        (*N).push_back(i);
+}
+
+void create_B_matrix(std::vector<std::vector<double>> A, std::vector<std::vector<double>> *B, std::vector<int> basic_partition)
+{
+    for (int i = 0; i < basic_partition.size(); i++)
+        for (int j = 0; j < basic_partition.size(); j++)
+            (*B)[i][j] = A[j][basic_partition[i]];
+}
+
+void solve_artificial_problem(std::vector<std::vector<double>> A, std::vector<double> c, std::vector<std::vector<double>> b)
+{
+    int m = A.size();
+    int n = c.size();
+    std::vector<int> non_basic_partition;
+    std::vector<int> basic_partition;
+    std::vector<std::vector<double>> B (m, std::vector<double> (m, 0));
+    std::vector<std::vector<double>> x_hat_b;
+
     create_artificial_problem(&A, &c);
-    print_vector(c);
-    std::cout << "A = " << std::endl;
-    mostrarMatriz(A);
-    // TODO: Implementar a resolução do problema artificial
+    create_non_basic_partition(&non_basic_partition, n);
+    create_basic_partition(&basic_partition, n, m);
+    create_B_matrix(A, &B, basic_partition);
+    // Calcular a inversa de B
+    x_hat_b = multiplicarMatrizes(B, b);
+    printMatrix(x_hat_b);
 }
 
 void simplex(LPInstance instance)   //Seria fase 1 apenas?
@@ -122,8 +176,9 @@ void simplex(LPInstance instance)   //Seria fase 1 apenas?
         instance = convert_to_standard_form(instance);
         auto A = create_constraint_matrix(instance);    // Matriz [A] = [N | B]
         auto c = create_cost_vector(instance);          // Vetor [Ctn | Ctb]
-        auto b = create_bound_vector(instance);         // Coluna [b]
+        auto b = create_bound_matrix(instance);         // Coluna [b]
         solve_artificial_problem(A, c, b);
+        return;
     }
 }
 

@@ -77,7 +77,7 @@ std::vector<double> extractCoefficients(const std::string &expression, int numVa
         {
             coefficient = std::stod((*it)[1].str()); // O coeficiente é extraído.
         }
-        int index = std::stoi((*it)[3].str()); // Obtém o índice da variável.
+        size_t index = std::stoi((*it)[3].str()); // Obtém o índice da variável.
         if (index > coefficients.size())       // Redimensiona o vetor de coeficientes se necessário.
         {
             coefficients.resize(index, 0);
