@@ -1,6 +1,55 @@
 #include <iostream>
 #include <vector>
 
+void check(){
+    std::cout << "CHECK" << std::endl;
+}
+
+void mostrarMatrizA(LPInstance instance){
+    std::cout << "A = " << std::endl;
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        for (size_t j = 0; j < instance.constraints[i].coefficients.size(); j++){
+            std::cout << instance.constraints[i].coefficients[j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+void mostrarMatrizB(LPInstance instance){
+    std::cout << "B = " << std::endl;
+    for (size_t i = 0; i < instance.reverseB.size(); i++){
+        for (size_t j = 0; j < instance.reverseB[i].size(); j++){
+            std::cout << instance.reverseB[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void mostrarMatrizInversaB(LPInstance instance){
+    std::cout << "reverseB = " << std::endl;
+    for (size_t i = 0; i < instance.reverseB.size(); i++){
+        for (size_t j = 0; j < instance.reverseB[i].size(); j++){
+            std::cout << instance.reverseB[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void mostrarVetorObjetivo(LPInstance instance){
+    std::cout << "C = [";
+    for (size_t i = 0; i < instance.objective.size(); i++){
+        std::cout << instance.objective[i] << ", ";
+    }
+    std::cout << "]" << std::endl;
+}
+
+void mostrarVetorLimite(LPInstance instance){
+    std::cout << "b = [";
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        std::cout << instance.constraints[i].bound << ", ";
+    }
+    std::cout << "]" << std::endl;
+}
+
 /**
  * @brief Preenche uma matriz com a matriz identidade.
  *
@@ -16,6 +65,18 @@ void preencheIdentidade(std::vector<std::vector<double>> &matriz, int tamanhoMat
     }
 }
 
+double multiplicarVetorVetor(
+    std::vector<double> vetor1, std::vector<double> vetor2
+){
+    std::vector<double> vetor_resultante;
+    double soma = 0;
+
+    for (size_t i = 0; i < vetor1.size(); i++){
+        soma += (vetor1[i] * vetor2[i]);      
+    }
+    return soma;
+}
+
 std::vector<double> multiplicaMatrizVetor(
     std::vector<std::vector<double>> matriz, std::vector<double> vetor
 ){
@@ -24,7 +85,7 @@ std::vector<double> multiplicaMatrizVetor(
 
     for (size_t i = 0; i < matriz.size(); i++){
         for (size_t j = 0; j < matriz[i].size(); j++){
-            soma += (matriz[i][j] + vetor[j]);      
+            soma += (matriz[i][j] * vetor[j]);      
         }
         vetor_resultante.push_back(soma);
         soma = 0;
@@ -32,17 +93,6 @@ std::vector<double> multiplicaMatrizVetor(
 
     return vetor_resultante;
 }
-
-LPInstance trocaColunas(LPInstance instance, int entrada, int saida){
-    std::swap(instance.objective[entrada], instance.objective[saida]);
-    for (size_t i = 0; i < instance.constraints.size(); i++){
-        std::swap(
-            instance.constraints[i].coefficients[entrada], instance.constraints[i].coefficients[saida]
-        );
-    }
-    return instance;
-}
-
 
 LPInstance eliminaColuna(LPInstance instance, int coluna){
     // Elimina elemento em C
@@ -207,28 +257,43 @@ bool checkCasoEspecial(
         // Verifica se a matriz possui propriedades de identidade
         // (cada linha com um '1' e o restante de 0)
         if ( (num_zeros == (inversa[i].size() - 1)) || (num_ones == 1)){
-            if ( ( (num_ones + num_zeros) == inversa[i].size() && special_case == false) ){
+            if ( (num_ones + num_zeros) == inversa[i].size() ){
                 special_case = true;
+            }else{
+                special_case = false;
+                return special_case;
             }
         }
         num_ones = 0;
         num_zeros = 0;
     }
-    std::cout << "IS Special case?" << special_case << std::endl;
     return special_case;
 }
 
-std::vector<std::vector<double>> inversaCasoEspecial(
-    std::vector<std::vector<double>> inversa
+LPInstance trocaColunas(LPInstance instance, int entrada, int saida){
+    std::swap(instance.objective[entrada], instance.objective[saida]);
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        std::swap(
+            instance.constraints[i].coefficients[entrada], instance.constraints[i].coefficients[saida]
+        );
+        std::swap(
+            instance.reverseB[i][(entrada - instance.var_n)], instance.reverseB[i][(saida - instance.var_n)]
+        );
+    }
+    return instance;
+}
+
+LPInstance inversaCasoEspecial(
+    LPInstance instance
 ){
-    for (size_t i = 0; i < inversa.size(); i++){
-        for (size_t j = 0; j < inversa[i].size(); j++){
-            if (inversa[i][j] == 1 && i != j){
-                std::swap(inversa[i][i], inversa[i][j]);
+    for (size_t i = 0; i < instance.reverseB.size(); i++){
+        for (size_t j = 0; j < instance.reverseB[i].size(); j++){
+            if (instance.reverseB[i][j] == 1 && i != j){
+                instance = trocaColunas(instance, (instance.var_n + i), (instance.var_n + j));
             }
         }
     }
-    return inversa;
+    return instance;
 }
 
 /**
@@ -238,7 +303,8 @@ std::vector<std::vector<double>> inversaCasoEspecial(
  * @param identidade A matriz identidade correspondente.
  * @param tamanhoMatriz O tamanho da matriz (número de linhas e colunas).
  */
-std::vector<std::vector<double>> calcularInversa(
+LPInstance calcularInversa(
+    LPInstance instance,
     std::vector<std::vector<double>> &matriz, 
     std::vector<std::vector<double>> &identidade, 
     int tamanhoMatriz
@@ -246,11 +312,11 @@ std::vector<std::vector<double>> calcularInversa(
 {
     bool casoEspecial = false;
     casoEspecial = checkCasoEspecial(matriz);
-    std::vector<std::vector<double>> inversa (tamanhoMatriz, std::vector<double> (tamanhoMatriz, 0));
 
     if (casoEspecial){
         std::cout << "Caso Especial de Matriz inversa (Identidade deslocada)" << std::endl;
-        inversa = inversaCasoEspecial(matriz);
+        instance = inversaCasoEspecial(instance);
+        return instance;
     }else{
         zerarElementosAcimaDiagonal(matriz, identidade, tamanhoMatriz);
         zerarElementosAbaixoDiagonal(matriz, identidade, tamanhoMatriz);
@@ -259,12 +325,11 @@ std::vector<std::vector<double>> calcularInversa(
             double pivo = matriz[i][i];
             for (int j = 0; j < tamanhoMatriz; j++)
             {
-                inversa[i][j] = identidade[i][j] / pivo;
+                instance.reverseB[i][j] = identidade[i][j] / pivo;
             }
         }
+        return instance;
     }
-
-    return inversa;
 }
 
 /**

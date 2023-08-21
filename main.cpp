@@ -6,7 +6,7 @@ int executar_otimizacao_d(std::string filename, bool show_steps);
 int executar_otimizacao_p(std::string filename);
 
 int main(){
-    bool show_steps = true;         // Altere para "false" para obter o resultado direto
+    bool show_steps = false;         // Altere para "false" para obter o resultado direto
     std::string filename = "C:/src/VSCode_Workspace/C/TrabSimplex/a.lp"; 
     executar_otimizacao_d(filename, show_steps);
     //executar_otimizacao_p(filename);
