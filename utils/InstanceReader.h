@@ -36,10 +36,12 @@ struct Constraint
  */
 struct LPInstance
 {
-    bool type;                           // Tipo do problema (true para maximização, false para minimização).
     bool is_artificial;
     int var_n;
     std::vector<std::vector<double>> reverseB;
+    std::vector<double> c_aux;
+
+    bool type;                           // Tipo do problema (true para maximização, false para minimização).
     std::vector<double> objective;       // Coeficientes da função objetivo.
     std::vector<Constraint> constraints; // Vetor de restrições do problema.
     std::vector<VariableBound> bounds;   // Vetor de limites das variáveis do problema.

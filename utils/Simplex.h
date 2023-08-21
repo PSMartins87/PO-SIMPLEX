@@ -130,12 +130,12 @@ LPInstance solve_artificial_problem( LPInstance instance )
     std::vector<std::vector<double>> I;             // Cria a matriz identidade [I]
     preencheIdentidade(I, instance.constraints.size());
 
-    mostrarVetorObjetivo(instance);  
-    mostrarMatrizA(instance);
     instance = create_artificial_problem(instance);
 
-    mostrarVetorObjetivo(instance);  
-    mostrarMatrizA(instance);
+    instance.c_aux = instance.objective;
+    for (size_t i = 0; i < c_copy.size(); i++){
+        instance.c_aux[i] = c_copy[i];
+    }
 
     while(!solved){
         // Obtem C (na forma de matriz), necessário para trabalhar com multiplicação de matrizes
@@ -158,18 +158,26 @@ LPInstance solve_artificial_problem( LPInstance instance )
             b_line.clear();
         }
         mostrarMatrizB(instance);
+
         // Obtem B inversa
         instance = calcularInversa(instance, instance.reverseB, I, instance.reverseB.size());
-        //mostrarMatrizInversaB(instance);
+        mostrarMatrizInversaB(instance);
+
         // Obtem X chapéu
         std::vector<double> hatX = multiplicaMatrizVetor(instance.reverseB, b);
+        print_vector(hatX, "hatX");
+
         // Separa trecho [CtB]
         std::vector<double> ctb;
         for (size_t i = instance.var_n; i < instance.objective.size(); i++){
             ctb.push_back(instance.objective[i]);
         }
+        print_vector(ctb, "CtB");
+
         // Obtem Lambda T
         std::vector<double> lambdaT = multiplicaMatrizVetor(instance.reverseB, ctb);
+        print_vector(lambdaT, "LambdaT");
+
         // Separa [N] = [A] - [B]
         std::vector<double> N_line;
         std::vector<std::vector<double>> N_matrix;
@@ -180,9 +188,11 @@ LPInstance solve_artificial_problem( LPInstance instance )
             N_matrix.push_back(N_line);
             N_line.clear();
         }
+
         // Declarações de variaveis a serem usadas
         std::vector<double> hatC, N_column;
         int result, exit_var, entry_var, smallest_result = 1;
+
         // Iteração para encontrar C chapéu da função
         for (size_t i = 0; i < instance.var_n; i++){
             for (size_t n_i = 0; n_i <  N_matrix.size(); n_i++){
@@ -201,13 +211,15 @@ LPInstance solve_artificial_problem( LPInstance instance )
             result = 0;
             N_column.clear();
         }
+        print_vector(hatC, "hatC");
+
+        // Verifica se o problema foi resolvido, caso seja corta a execução
         solved = true;
         for (size_t i = 0; i < hatC.size(); i++){
             if (hatC[i] < 0){
                 solved = false;
             }
         }
-        // Verifica se o problema foi resolvido, caso seja corta a execução
         if (solved){ break; }
 
         for (size_t a_i = 0; a_i < instance.constraints.size(); a_i++){
@@ -220,6 +232,7 @@ LPInstance solve_artificial_problem( LPInstance instance )
         // Obtem vetor Y
         std::vector<double> Y;
         Y = multiplicaMatrizVetor(instance.reverseB, N_column);
+        print_vector(Y, "Y");
 
         double result2 = 9999;
         
@@ -230,34 +243,39 @@ LPInstance solve_artificial_problem( LPInstance instance )
             }
         }
 
-        mostrarMatrizA(instance);
-        mostrarVetorObjetivo(instance);
-        std::cout << "Sai x" << exit_var << " Entra x" << entry_var << std::endl;
+        std::cout << "Sai pos:" << exit_var << " Entra pos:" << entry_var << std::endl;
         instance = trocaColunas(instance, entry_var, exit_var);
-        mostrarMatrizA(instance);
-        mostrarVetorObjetivo(instance);
 
         instance.reverseB.clear();
-
-        std::cout << "Pressione qualquer tecla para continuar" << std::endl;
-        getchar();
-        getchar();
     }
-
+    // Texto de resolução
+    std::cout << "=========================================================" << std::endl;
     std::cout << "Problema artificial resolvido" << std::endl;
+    std::cout << "=========================================================" << std::endl;
 
+    // Exclui coluna das variaveis artificiais
     for (size_t i = 0; i < instance.objective.size(); i++){
         if (instance.objective[i] == 1){
             instance = eliminaColuna(instance, i);
+            if (i < instance.c_aux.size()){
+                instance.c_aux.erase(instance.c_aux.begin() + i);
+            }
             instance.var_n--;
         }
     }
+    // Faz alterações finais
+    instance.objective = instance.c_aux;
+    instance.c_aux.clear();
+    instance.reverseB.clear();
+    instance.is_artificial = false;
 
     return instance;
 }
 
+
 void simplex(LPInstance instance)   //Seria fase 1 apenas?
 {
+    bool is_solved = false;
     instance = convert_obj_func_to_min(instance);
     instance.var_n = instance.objective.size();
 
@@ -265,5 +283,122 @@ void simplex(LPInstance instance)   //Seria fase 1 apenas?
         instance = convert_to_standard_form(instance);
         instance = solve_artificial_problem(instance);
     }
-    // solve_problem(lpinstance);
+    std::vector<std::vector<double>> I;             // Cria a matriz identidade [I]
+    preencheIdentidade(I, instance.constraints.size());
+    while(!is_solved){
+        // Obtem C (na forma de matriz), necessário para trabalhar com multiplicação de matrizes
+        std::vector<double> c;
+        for (size_t i = 0; i < instance.objective.size(); i++){
+            c.push_back(instance.objective[i]);
+        }
+        // Ontem b (na forma de matriz)=======================================================
+        std::vector<double> b;
+        for (size_t i = 0; i < instance.constraints.size(); i++){
+            b.push_back(instance.constraints[i].bound);
+        }
+        // Obtem [B] A - N  ===================================================================
+        for (size_t i = 0; i < instance.constraints.size() ; i++){
+            std::vector<double> b_line;
+            for (size_t j = instance.var_n; j < instance.constraints[i].coefficients.size(); j++){
+                b_line.push_back(instance.constraints[i].coefficients[j]);
+            }
+            instance.reverseB.push_back(b_line);
+            b_line.clear();
+        }
+        mostrarMatrizB(instance);
+
+        // Obtem B inversa
+        instance = calcularInversa(instance, instance.reverseB, I, instance.reverseB.size());
+        mostrarMatrizInversaB(instance);
+
+        // Obtem X chapéu
+        std::vector<double> hatX = multiplicaMatrizVetor(instance.reverseB, b);
+        print_vector(hatX, "hatX");
+
+        // Separa trecho [CtB]
+        std::vector<double> ctb;
+        for (size_t i = instance.var_n; i < instance.objective.size(); i++){
+            ctb.push_back(instance.objective[i]);
+        }
+        print_vector(ctb, "CtB");
+
+        // Obtem Lambda T
+        std::vector<double> lambdaT = multiplicaMatrizVetor(instance.reverseB, ctb);
+        print_vector(lambdaT, "LambdaT");
+
+        // Separa [N] = [A] - [B]
+        std::vector<double> N_line;
+        std::vector<std::vector<double>> N_matrix;
+        for (size_t i = 0; i < instance.constraints.size(); i++){
+            for (size_t j = 0; j < instance.var_n; j++){
+                N_line.push_back(instance.constraints[i].coefficients[j]);
+            }
+            N_matrix.push_back(N_line);
+            N_line.clear();
+        }
+
+        // Declarações de variaveis a serem usadas
+        std::vector<double> hatC, N_column;
+        int result, exit_var, entry_var, smallest_result = 1;
+
+        // Iteração para encontrar C chapéu da função
+        for (size_t i = 0; i < instance.var_n; i++){
+            for (size_t n_i = 0; n_i <  N_matrix.size(); n_i++){
+                for (size_t n_j = 0; n_j < N_matrix[n_i].size(); n_j++){
+                    if (n_j == i){
+                        N_column.push_back(N_matrix[n_i][n_j]);
+                    }
+                }
+            }
+            result = instance.objective[i] - multiplicarVetorVetor(lambdaT, N_column);
+            if (result < smallest_result){
+                smallest_result = result;
+                entry_var = i;
+            }
+            hatC.push_back(result);
+            result = 0;
+            N_column.clear();
+        }
+        print_vector(hatC, "hatC");
+
+        // Verifica se o problema foi resolvido, caso seja corta a execução
+        is_solved = true;
+        for (size_t i = 0; i < hatC.size(); i++){
+            if (hatC[i] < 0){
+                is_solved = false;
+            }
+        }
+        if (is_solved){ break; }
+
+        for (size_t a_i = 0; a_i < instance.constraints.size(); a_i++){
+            for (size_t a_j = 0; a_j < instance.constraints[a_i].coefficients.size(); a_j++){
+                if (a_j == entry_var){
+                    N_column.push_back(instance.constraints[a_i].coefficients[a_j]);
+                }
+            }
+        }
+        // Obtem vetor Y
+        std::vector<double> Y;
+        Y = multiplicaMatrizVetor(instance.reverseB, N_column);
+        print_vector(Y, "Y");
+
+        double result2 = 9999;
+        
+        for (size_t i = 0; i < Y.size(); i++){
+            if ( ( hatX[i] / Y[i] ) < result2){
+                result2 = hatX[i] / Y[i];
+                exit_var = (instance.var_n + i);
+            }
+        }
+
+        std::cout << "Sai pos:" << exit_var << " Entra pos:" << entry_var << std::endl;
+        instance = trocaColunas(instance, entry_var, exit_var);
+
+        instance.reverseB.clear();
+    }
+    std::cout << "=========================================================" << std::endl;
+    std::cout << "Problema Resolvido" << std::endl;
+    std::cout << "=========================================================" << std::endl;
+    mostrarMatrizA(instance);
+    mostrarVetorObjetivo(instance);
 }

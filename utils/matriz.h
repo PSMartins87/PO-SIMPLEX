@@ -96,18 +96,14 @@ std::vector<double> multiplicaMatrizVetor(
 
 LPInstance eliminaColuna(LPInstance instance, int coluna){
     // Elimina elemento em C
-    auto it_c = std::find(instance.objective.begin(), instance.objective.end(), coluna);
-    if (it_c != instance.objective.end()){
-        instance.objective.erase(it_c);
+    if (coluna < instance.objective.size()){
+        instance.objective.erase(instance.objective.begin() + coluna);
     }
 
 
-    for (size_t i = 0; i < instance.constraints.size(); i++){
-        auto it_a = std::find(
-            instance.constraints[i].coefficients.begin(), instance.constraints[i].coefficients.end(), coluna
-        );
-        if (it_a != instance.constraints[i].coefficients.end()) {
-            instance.constraints[i].coefficients.erase(it_a);
+    for (size_t i = 0; i < instance.constraints.size(); i++) {
+        if (coluna < instance.constraints[i].coefficients.size()) {
+            instance.constraints[i].coefficients.erase(instance.constraints[i].coefficients.begin() + coluna);
         }
     }
 
@@ -257,12 +253,10 @@ bool checkCasoEspecial(
         // Verifica se a matriz possui propriedades de identidade
         // (cada linha com um '1' e o restante de 0)
         if ( (num_zeros == (inversa[i].size() - 1)) || (num_ones == 1)){
-            if ( (num_ones + num_zeros) == inversa[i].size() ){
-                special_case = true;
-            }else{
-                special_case = false;
-                return special_case;
-            }
+            special_case = true;
+        }else{
+            special_case = false;
+            return special_case;
         }
         num_ones = 0;
         num_zeros = 0;
@@ -272,6 +266,7 @@ bool checkCasoEspecial(
 
 LPInstance trocaColunas(LPInstance instance, int entrada, int saida){
     std::swap(instance.objective[entrada], instance.objective[saida]);
+    std::swap(instance.c_aux[entrada], instance.c_aux[saida]);
     for (size_t i = 0; i < instance.constraints.size(); i++){
         std::swap(
             instance.constraints[i].coefficients[entrada], instance.constraints[i].coefficients[saida]
@@ -376,9 +371,9 @@ double calculaDeterminante(const std::vector<std::vector<double>> &matriz, int t
     }
 }
 
-void print_vector(std::vector<double> v) {
-    std::cout << "V = [";
-    for (auto e: v)
+void print_vector(std::vector<double> vetor, std::string text) {
+    std::cout << text << " = [";
+    for (auto e: vetor)
         std::cout << "," << e;
     std::cout << "] \n";
 }
