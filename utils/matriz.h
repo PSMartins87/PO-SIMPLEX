@@ -264,16 +264,21 @@ bool checkCasoEspecial(
     return special_case;
 }
 
-LPInstance trocaColunas(LPInstance instance, int entrada, int saida){
+LPInstance trocaColunas(
+    LPInstance instance, int entrada, int saida, bool swapB
+){
     std::swap(instance.objective[entrada], instance.objective[saida]);
     std::swap(instance.c_aux[entrada], instance.c_aux[saida]);
     for (size_t i = 0; i < instance.constraints.size(); i++){
         std::swap(
             instance.constraints[i].coefficients[entrada], instance.constraints[i].coefficients[saida]
         );
-        std::swap(
-            instance.reverseB[i][(entrada - instance.var_n)], instance.reverseB[i][(saida - instance.var_n)]
-        );
+        // Trecho para garantir que posições de B só serão acessadas no caso especial da matriz
+        if ( swapB ){
+            std::swap(
+                instance.reverseB[i][(entrada - instance.var_n)], instance.reverseB[i][(saida - instance.var_n)]
+            );
+        }
     }
     return instance;
 }
@@ -284,7 +289,7 @@ LPInstance inversaCasoEspecial(
     for (size_t i = 0; i < instance.reverseB.size(); i++){
         for (size_t j = 0; j < instance.reverseB[i].size(); j++){
             if (instance.reverseB[i][j] == 1 && i != j){
-                instance = trocaColunas(instance, (instance.var_n + i), (instance.var_n + j));
+                instance = trocaColunas(instance, (instance.var_n + i), (instance.var_n + j), true);
             }
         }
     }
