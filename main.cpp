@@ -2,17 +2,17 @@
 #include "utils/InstanceReader.h"
 #include "utils/Simplex.h"
 
-int executar_otimizacao_d(std::string filename, bool show_steps);
-int executar_otimizacao_p(std::string filename);
+int executar_otimizacao_d(bool show_steps);
+int executar_otimizacao_p();
 
 int main(){
     bool show_steps = false;         // Altere para "false" para obter o resultado direto
-    std::string filename = "C:/src/VSCode_Workspace/C/TrabSimplex/a.lp"; 
-    executar_otimizacao_d(filename, show_steps);
+    executar_otimizacao_d(show_steps);
     //executar_otimizacao_p(filename);
+    return 0;
 }
 
-int executar_otimizacao_d(std::string filename, bool show_steps)
+int executar_otimizacao_d(bool show_steps)
 {
     LPInstance instance = convert_obj_func_to_min(loadFile());
 
@@ -66,7 +66,7 @@ int executar_otimizacao_d(std::string filename, bool show_steps)
     return 0;
 }
 
-int executar_otimizacao_p(std::string filename)
+int executar_otimizacao_p()
 {
     LPInstance instance = loadFile();
 
@@ -103,4 +103,5 @@ int executar_otimizacao_p(std::string filename)
         std::cout << instance.bounds[i].lower_bound << " " << instance.bounds[i].lower_bound_sign << " "
                   << " x" << (i + 1) << " " << instance.bounds[i].upper_bound_sign << " " << instance.bounds[i].upper_bound << std::endl;
     }
+    return 0;
 }

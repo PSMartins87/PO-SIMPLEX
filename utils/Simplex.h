@@ -1,5 +1,58 @@
 #include "./InstanceReader.h"
 #include "./matriz.h"
+#include "./calcularInversa.h"
+
+void print_vector(std::vector<double> vetor, std::string text) {
+    std::cout << text << " = [";
+    for (auto e: vetor)
+        std::cout << "," << e;
+    std::cout << "] \n";
+}
+
+void mostrarMatrizA(LPInstance instance){
+    std::cout << "A = " << std::endl;
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        for (size_t j = 0; j < instance.constraints[i].coefficients.size(); j++){
+            std::cout << instance.constraints[i].coefficients[j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+void mostrarMatrizB(LPInstance instance){
+    std::cout << "B = " << std::endl;
+    for (size_t i = 0; i < instance.reverseB.size(); i++){
+        for (size_t j = 0; j < instance.reverseB[i].size(); j++){
+            std::cout << instance.reverseB[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void mostrarMatrizInversaB(LPInstance instance){
+    std::cout << "reverseB = " << std::endl;
+    for (size_t i = 0; i < instance.reverseB.size(); i++){
+        for (size_t j = 0; j < instance.reverseB[i].size(); j++){
+            std::cout << instance.reverseB[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+void mostrarVetorObjetivo(LPInstance instance){
+    std::cout << "C = [";
+    for (size_t i = 0; i < instance.objective.size(); i++){
+        std::cout << instance.objective[i] << ", ";
+    }
+    std::cout << "]" << std::endl;
+}
+
+void mostrarVetorLimite(LPInstance instance){
+    std::cout << "b = [";
+    for (size_t i = 0; i < instance.constraints.size(); i++){
+        std::cout << instance.constraints[i].bound << ", ";
+    }
+    std::cout << "]" << std::endl;
+}
 
 LPInstance convert_obj_func_to_min(LPInstance instance)
 {   
@@ -124,7 +177,6 @@ LPInstance create_artificial_problem(LPInstance instance)
 }
 
 bool step_by_step = true;
-bool test_mode = false;
 
 LPInstance solve_artificial_problem( LPInstance instance )
 {
@@ -142,13 +194,11 @@ LPInstance solve_artificial_problem( LPInstance instance )
     }
 
     while(!solved){
-        if (test_mode) { check(); }
         // Ontem b (na forma de vetor)=======================================================
         std::vector<double> b;
         for (size_t i = 0; i < instance.constraints.size(); i++){
             b.push_back(instance.constraints[i].bound);
         }
-        if (test_mode) { check(); }
         // Obtem [B] A - N  ===================================================================
         for (size_t i = 0; i < instance.constraints.size() ; i++){
             std::vector<double> b_line;
@@ -159,26 +209,21 @@ LPInstance solve_artificial_problem( LPInstance instance )
             b_line.clear();
         }
         if(step_by_step){ mostrarMatrizB(instance); }
-        if (test_mode) { check(); }
         // Obtem B inversa
         instance = calcularInversa(instance, instance.reverseB, I, instance.reverseB.size());
         if (step_by_step) { mostrarMatrizInversaB(instance); }
-        if (test_mode) { check(); }
         // Obtem X chapéu
         std::vector<double> hatX = multiplicaMatrizVetor(instance.reverseB, b);
         if (step_by_step) { print_vector(hatX, "hatX"); }
-        if (test_mode) { check(); }
         // Separa trecho [CtB]
         std::vector<double> ctb;
         for (size_t i = instance.var_n; i < instance.objective.size(); i++){
             ctb.push_back(instance.objective[i]);
         }
         if (step_by_step) { print_vector(ctb, "CtB"); }
-        if (test_mode) { check(); }
         // Obtem Lambda T
         std::vector<double> lambdaT = multiplicaMatrizVetor(instance.reverseB, ctb);
         if (step_by_step) { print_vector(lambdaT, "LambdaT"); }
-        if (test_mode) { check(); }
         // Separa [N] = [A] - [B]
         std::vector<double> N_line;
         std::vector<std::vector<double>> N_matrix;
@@ -193,7 +238,6 @@ LPInstance solve_artificial_problem( LPInstance instance )
             std::cout << " N = " << std::endl;
             mostrarMatriz(N_matrix);
         }
-        if (test_mode) { check(); }
         // Declarações de variaveis a serem usadas
         std::vector<double> hatC, N_column;
         int result, exit_var, entry_var, smallest_result = 1;
@@ -239,7 +283,6 @@ LPInstance solve_artificial_problem( LPInstance instance )
         Y = multiplicaMatrizVetor(instance.reverseB, N_column);
         if (step_by_step) { print_vector(Y, "Y"); }
 
-        if (test_mode) { check(); }
         double result2 = 9999;
         for (size_t i = 0; i < Y.size(); i++){
             if ( ( hatX[i] / Y[i] ) < result2){
@@ -258,7 +301,6 @@ LPInstance solve_artificial_problem( LPInstance instance )
             std::cout << "Limpando matriz inversa de B..." << std::endl;
             std::cout << "=====Fim de Iteracao===============================================" << std::endl; 
         }
-        if (test_mode) { check(); }
     }
     // Texto de resolução
     std::cout << "=========================================================" << std::endl;

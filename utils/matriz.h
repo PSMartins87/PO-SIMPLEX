@@ -1,54 +1,7 @@
 #include <iostream>
 #include <vector>
 
-void check(){
-    std::cout << "CHECK" << std::endl;
-}
-
-void mostrarMatrizA(LPInstance instance){
-    std::cout << "A = " << std::endl;
-    for (size_t i = 0; i < instance.constraints.size(); i++){
-        for (size_t j = 0; j < instance.constraints[i].coefficients.size(); j++){
-            std::cout << instance.constraints[i].coefficients[j] << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-void mostrarMatrizB(LPInstance instance){
-    std::cout << "B = " << std::endl;
-    for (size_t i = 0; i < instance.reverseB.size(); i++){
-        for (size_t j = 0; j < instance.reverseB[i].size(); j++){
-            std::cout << instance.reverseB[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-void mostrarMatrizInversaB(LPInstance instance){
-    std::cout << "reverseB = " << std::endl;
-    for (size_t i = 0; i < instance.reverseB.size(); i++){
-        for (size_t j = 0; j < instance.reverseB[i].size(); j++){
-            std::cout << instance.reverseB[i][j] << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-void mostrarVetorObjetivo(LPInstance instance){
-    std::cout << "C = [";
-    for (size_t i = 0; i < instance.objective.size(); i++){
-        std::cout << instance.objective[i] << ", ";
-    }
-    std::cout << "]" << std::endl;
-}
-
-void mostrarVetorLimite(LPInstance instance){
-    std::cout << "b = [";
-    for (size_t i = 0; i < instance.constraints.size(); i++){
-        std::cout << instance.constraints[i].bound << ", ";
-    }
-    std::cout << "]" << std::endl;
-}
+#include "./InstanceReader.h"
 
 /**
  * @brief Preenche uma matriz com a matriz identidade.
@@ -189,8 +142,11 @@ void trocarLinhas(std::vector<std::vector<double>> &matriz, std::vector<std::vec
  * @param coluna A coluna alvo.
  * @param tamanhoMatriz O tamanho da matriz (número de linhas e colunas).
  */
-void eliminarElemento(std::vector<std::vector<double>> &matriz, std::vector<std::vector<double>> &identidade, int linha1, int linha2, int coluna, int tamanhoMatriz)
-{
+void eliminarElemento(
+    std::vector<std::vector<double>> &matriz, 
+    std::vector<std::vector<double>> &identidade, 
+    int linha1, int linha2, int coluna, int tamanhoMatriz
+){
     double fator = matriz[linha2][coluna] / matriz[linha1][coluna];
     for (int k = 0; k < tamanhoMatriz; k++)
     {
@@ -374,11 +330,4 @@ double calculaDeterminante(const std::vector<std::vector<double>> &matriz, int t
         }
         return determinante;
     }
-}
-
-void print_vector(std::vector<double> vetor, std::string text) {
-    std::cout << text << " = [";
-    for (auto e: vetor)
-        std::cout << "," << e;
-    std::cout << "] \n";
 }
