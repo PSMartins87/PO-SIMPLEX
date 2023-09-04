@@ -2,6 +2,8 @@
 #include "./matriz.h"
 #include "./calcularInversa.h"
 
+bool step_by_step = true;
+
 void print_vector(std::vector<double> vetor, std::string text) {
     std::cout << text << " = [";
     for (auto e: vetor)
@@ -176,11 +178,9 @@ LPInstance create_artificial_problem(LPInstance instance)
     return instance;
 }
 
-bool step_by_step = true;
-
 LPInstance solve_artificial_problem( LPInstance instance )
 {
-    bool solved = false;
+    bool solved = !instance.is_artificial;
     std::vector<double> c_copy = instance.objective;
 
     std::vector<std::vector<double>> I;             // Cria a matriz identidade [I]
@@ -450,4 +450,5 @@ void simplex(LPInstance instance)   //Seria fase 1 apenas?
     std::cout << "=========================================================" << std::endl;
     mostrarMatrizA(instance);
     mostrarVetorObjetivo(instance);
+
 }
