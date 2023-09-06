@@ -129,6 +129,7 @@ LPInstance loadFile()
                     std::smatch signMatch;                          // Armazena as correspondências.
                     if (std::regex_search(line, signMatch, signPattern))
                     {
+                        std::cout << line << std::endl;
                         c.signal = signMatch[1].str();                            // Define o sinal da restrição.
                         c.coefficients = extractCoefficients(line, numVariables); // Extrai coeficientes.
                         c.bound = std::stod(signMatch[2].str());                  // Define o limite da restrição.

@@ -1,5 +1,6 @@
 #include "./InstanceReader.h"
 #include "./matriz.h"
+#include <bits/stdc++.h>
 
 void printMatrix(const std::vector<std::vector<double>>& matrix) {
     int rows = matrix.size();
@@ -22,14 +23,16 @@ void print_vector(std::vector<int> v) {
 }
 
 LPInstance convert_obj_func_to_min(LPInstance instance)
-{   
+{
+    std::cout << instance.constraints.size() << std::endl;  
     if (instance.type)
     {
         std::cout << "Tipo Maximizar - converte para minimizar" << std::endl;
         LPInstance new_instance = instance;
         instance.type = false;
-        for (int i = 0; i < instance.objective.size(); i++)
+        for (int i = 0; i < instance.objective.size(); i++) {
             new_instance.objective[i] = new_instance.objective[i] * (-1);   // Inversão da função objetivo
+        }
         return new_instance;
     }
     return instance;
@@ -104,6 +107,8 @@ std::vector<std::vector<double>>
 create_constraint_matrix(LPInstance instance)
 {
     int n = instance.constraints.size();
+    std::cout << n << std::endl;
+
     std::vector<std::vector<double>> constraint_matrix;
 
     for (int i = 0; i < n; i++)
@@ -254,7 +259,9 @@ double solve(std::vector<std::vector<double>> A, std::vector<double> c, std::vec
     std::vector<std::vector<double>> B (m, std::vector<double> (m, 0));
     std::vector<std::vector<double>> B_inv (m, std::vector<double> (m, 0));
     std::vector<std::vector<double>> x_hat_b;
+    std::vector<std::vector<double>> x_hat (n, std::vector<double> (1, 0));
     std::vector<std::vector<double>> lambda_t;
+    std::vector<double> results;
 
     create_non_basic_partition(&non_basic_partition, n, m);
     create_basic_partition(&basic_partition, n, m);
@@ -273,6 +280,8 @@ double solve(std::vector<std::vector<double>> A, std::vector<double> c, std::vec
         lambda_t = multiplicarMatrizes(ctb, B_inv);
 
         int goes_in = calculate_relative_costs(A, &relative_costs, lambda_t, c, non_basic_partition);
+
+        print_vector(basic_partition);
 
         if (is_optimal(relative_costs)) {
             std::cout << "Solucao otima encontrada!" << std::endl;
@@ -293,9 +302,15 @@ double solve(std::vector<std::vector<double>> A, std::vector<double> c, std::vec
         create_B_matrix(A, &B, basic_partition);
     }
 
-    for (int i = 0; i < basic_partition.size(); i++)    
+    // Calcula o resultado final, ou seja, resultado de z
+    for (int i = 0; i < basic_partition.size(); i++) {
         result += c[basic_partition[i]] * x_hat_b[i][0];
-    return result;      
+        x_hat[basic_partition[i]][0] = x_hat_b[i][0];
+    }
+
+    printMatrix(x_hat);
+
+    std::cout << "z: " << result << std::endl;
 }
 
 void simplex(LPInstance instance)   //Seria fase 1 apenas?
@@ -303,11 +318,11 @@ void simplex(LPInstance instance)   //Seria fase 1 apenas?
     double result = 0.0;
     instance = convert_obj_func_to_min(instance);
     instance = convert_to_standard_form(instance);
-    auto A = create_constraint_matrix(instance);    
+    auto A = create_constraint_matrix(instance);
     auto c = create_cost_vector(instance);    
     auto b = create_bound_matrix(instance);         
-    result = solve(A, c, b) ;
-    std::cout << "Solucao otima eh " << result << std::endl;
+    printMatrix(A);
+    solve(A, c, b);
 }
 
 // TODO: Algoritmo para encontrar solução ótima
